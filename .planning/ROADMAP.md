@@ -16,7 +16,7 @@
 - [x] **Phase 1: Подключение и чтение проекта** - Рабочий stdio-сервер: агент проходит handshake, проверяет токен и читает проекты, дерево и файлы; фундамент и тестовый харнесс (completed 2026-09-24)
 - [x] **Phase 2: История и запись в репозиторий** - Агент смотрит ветки, коммиты, сравнения и вносит изменения: ветка, коммит нескольких файлов, правка одного файла
  (completed 2026-09-24)
-- [ ] **Phase 3: Merge Requests** - Агент просматривает MR (детали, diff, комментарии), создаёт, комментирует, правит и вливает MR
+- [x] **Phase 3: Merge Requests** - Агент просматривает MR (детали, diff, комментарии), создаёт, комментирует, правит и вливает MR (completed 2026-09-24)
 - [ ] **Phase 4: Живая проверка и поставка** - Полный сценарий на реальном gitlab.com пройден; один `gitlab-mcp.exe` и README готовы к подключению агента
 
 ## Phase Details
@@ -129,7 +129,7 @@ Plans:
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 03-05-PLAN.md — merge_merge_request (GET pre-check gate, single PUT, 400/401/403/405/406/409/422 wording), full MR flow test, all 20 tools
+- [x] 03-05-PLAN.md — merge_merge_request (GET pre-check gate, single PUT, 400/401/403/405/406/409/422 wording), full MR flow test, all 20 tools
 
 ### Phase 4: Живая проверка и поставка
 
@@ -155,7 +155,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. Подключение и чтение проекта | 6/6 | Complete   | 2026-09-24 |
 | 2. История и запись в репозиторий | 5/5 | Complete   | 2026-09-24 |
-| 3. Merge Requests | 4/5 | In Progress|  |
+| 3. Merge Requests | 5/5 | Complete   | 2026-09-24 |
 | 4. Живая проверка и поставка | 0/TBD | Not started | - |
 
 ## Backlog

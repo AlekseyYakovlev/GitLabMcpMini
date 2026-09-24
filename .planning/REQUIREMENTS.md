@@ -36,7 +36,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **MR-04**: `list_merge_request_notes` — комментарии MR (системные помечены)
 - [x] **MR-05**: `create_merge_request` — создание MR из ветки
 - [x] **MR-06**: `create_merge_request_note` — общий комментарий к MR
-- [ ] **MR-07**: `merge_merge_request` — merge с проверкой `detailed_merge_status` и понятными сообщениями об отказе
+- [x] **MR-07**: `merge_merge_request` — merge с проверкой `detailed_merge_status` и понятными сообщениями об отказе
 - [x] **MR-08**: `update_merge_request` — правка заголовка, описания, состояния MR
 
 ### Запись в репозиторий
@@ -127,7 +127,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | MR-04 | Phase 3 | Complete |
 | MR-05 | Phase 3 | Complete |
 | MR-06 | Phase 3 | Complete |
-| MR-07 | Phase 3 | Pending |
+| MR-07 | Phase 3 | Complete |
 | MR-08 | Phase 3 | Complete |
 | QA-03 | Phase 4 | Pending |
 | QA-04 | Phase 4 | Pending |
