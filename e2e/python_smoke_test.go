@@ -27,6 +27,10 @@ func TestPythonSmoke(t *testing.T) {
 		map[string]string{"X-Next-Page": "2"})
 	fake.JSON("GET", "/api/v4/projects/g%2Fp/repository/files/README%2Emd", 200,
 		`{"file_name":"README.md","file_path":"README.md","size":12,"encoding":"base64","content":"IyBIZWxsbwp3b3JsZAo=","ref":"main","blob_id":"b1","last_commit_id":"c1"}`, nil)
+	fake.JSON("GET", "/api/v4/projects/g%2Fp/repository/branches", 200,
+		`[{"name":"main","default":true,"protected":true,"merged":false,"commit":{"id":"a1b2c3d4e5f6a7b8c9d0a1b2c3d4e5f6a7b8c9d0","short_id":"a1b2c3d4","title":"Init"}}]`, nil)
+	fake.JSON("POST", "/api/v4/projects/g%2Fp/repository/branches", 201,
+		`{"name":"smoke/branch","commit":{"id":"a1b2c3d4e5f6a7b8c9d0a1b2c3d4e5f6a7b8c9d0","short_id":"a1b2c3d4","title":"Init"},"web_url":"https://gitlab.example/g/p/-/tree/smoke/branch"}`, nil)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
@@ -46,6 +50,12 @@ func TestPythonSmoke(t *testing.T) {
 	}
 	if !strings.Contains(stdout.String(), "есть следующая страница") {
 		t.Errorf("stdout does not contain the tree pagination footer:\n%s", stdout.String())
+	}
+	if !strings.Contains(stdout.String(), "[protected]") {
+		t.Errorf("stdout does not contain the branch protection marker:\n%s", stdout.String())
+	}
+	if !strings.Contains(stdout.String(), "smoke/branch") {
+		t.Errorf("stdout does not contain the created branch:\n%s", stdout.String())
 	}
 	if !strings.Contains(stdout.String(), "# Hello") {
 		t.Errorf("stdout does not contain the decoded README content:\n%s", stdout.String())
