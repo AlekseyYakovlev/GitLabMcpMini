@@ -52,7 +52,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 01-05-PLAN.md — Default-branch resolution + list_repository_tree
+- [x] 01-05-PLAN.md — Default-branch resolution + list_repository_tree
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
@@ -110,7 +110,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Подключение и чтение проекта | 4/6 | In Progress|  |
+| 1. Подключение и чтение проекта | 5/6 | In Progress|  |
 | 2. История и запись в репозиторий | 0/TBD | Not started | - |
 | 3. Merge Requests | 0/TBD | Not started | - |
 | 4. Живая проверка и поставка | 0/TBD | Not started | - |
