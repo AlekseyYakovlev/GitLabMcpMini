@@ -1,9 +1,12 @@
 package tools
 
 import (
+	"encoding/json"
+	"fmt"
 	"net/url"
 	"strings"
 	"testing"
+	"unicode/utf8"
 
 	"gitlab-mcp/internal/testutil"
 )
@@ -191,5 +194,129 @@ func TestParseTime(t *testing.T) {
 	}
 	if _, err := parseTime("until", "01.09.2026"); err == nil || !strings.Contains(err.Error(), "until") {
 		t.Errorf("parseTime(bad) error = %v, want one naming until", err)
+	}
+}
+
+const (
+	commitSHA    = "a1b2c3d4e5f6a7b8c9d0a1b2c3d4e5f6a7b8c9d0"
+	commitParent = "9f8e7d6c5b4a39281706f5e4d3c2b1a099887766"
+	commitRoute  = "/api/v4/projects/g%2Fp/repository/commits/a1b2c3d4"
+)
+
+func commitJSON(message string) string {
+	msg, _ := json.Marshal(message)
+	return `{"id":"` + commitSHA + `","short_id":"a1b2c3d4","title":"Fix login","author_name":"Иван Петров",` +
+		`"authored_date":"2026-09-20T10:00:00Z","committed_date":"2026-09-20T10:00:00Z","message":` + string(msg) + `,` +
+		`"parent_ids":["` + commitParent + `"],"stats":{"additions":12,"deletions":3,"total":15},"web_url":"https://gitlab.com/g/p/-/commit/` + commitSHA + `"}`
+}
+
+func TestGetCommit(t *testing.T) {
+	fake := testutil.NewFakeGitLab(t)
+	fake.JSON("GET", commitRoute, 200, commitJSON("Fix login\n\nLong body"), nil)
+	fake.JSON("GET", commitRoute+"/diff", 200, `[
+		{"diff":"@@ -1 +1 @@\n-a\n+b\n","new_path":"a.go","old_path":"a.go","a_mode":"100644","b_mode":"100644"},
+		{"diff":"","new_path":"big.bin","old_path":"big.bin","a_mode":"100644","b_mode":"100644","too_large":true}
+	]`, map[string]string{"X-Next-Page": "2"})
+	cs := newTestSession(t, fake)
+
+	text, isErr := callText(t, cs, "get_commit", map[string]any{"project": "g/p", "sha": "a1b2c3d4"})
+	if isErr {
+		t.Fatalf("unexpected tool error: %s", text)
+	}
+
+	reqs := fake.Requests()
+	want := []string{"GET " + commitRoute, "GET " + commitRoute + "/diff?page=1&per_page=20"}
+	if len(reqs) != 2 || reqs[0] != want[0] || reqs[1] != want[1] {
+		t.Fatalf("requests = %v, want %v", reqs, want)
+	}
+	for _, w := range []string{
+		"коммит " + commitSHA,
+		"автор: Иван Петров, дата: 2026-09-20T10:00:00Z",
+		"родители: 9f8e7d6c",
+		"изменения: +12/−3",
+		"Fix login\n\nLong body",
+		"https://gitlab.com/g/p/-/commit/" + commitSHA,
+		"файлов на странице: 2",
+		"### a.go [modified]\n@@ -1 +1 @@\n-a\n+b",
+		"### big.bin [modified] — патч не показан: GitLab пометил файл как too_large; содержимое: get_file_contents path=big.bin ref=" + commitSHA,
+	} {
+		if !strings.Contains(text, w) {
+			t.Errorf("text lacks %q:\n%s", w, text)
+		}
+	}
+	if !strings.HasSuffix(text, "вызовите с page=2]") {
+		t.Errorf("text must end with the next-page footer: %q", text[len(text)-80:])
+	}
+	if strings.Index(text, "файлов на странице") > strings.Index(text, "### a.go") {
+		t.Errorf("the file count must precede the diff")
+	}
+}
+
+func TestGetCommitLongMessageIsCut(t *testing.T) {
+	fake := testutil.NewFakeGitLab(t)
+	fake.JSON("GET", commitRoute, 200, commitJSON("Title\n"+strings.Repeat("m", 3000)), nil)
+	fake.JSON("GET", commitRoute+"/diff", 200, `[]`, nil)
+	cs := newTestSession(t, fake)
+
+	text, isErr := callText(t, cs, "get_commit", map[string]any{"project": "g/p", "sha": "a1b2c3d4"})
+	if isErr {
+		t.Fatalf("unexpected tool error: %s", text)
+	}
+	if !strings.Contains(text, "[сообщение обрезано]") {
+		t.Errorf("text lacks the message cut marker:\n%s", text)
+	}
+	if n := utf8.RuneCountInString(text); n > 1500 {
+		t.Errorf("text has %d runes, the message must be capped near 1000", n)
+	}
+	if !strings.Contains(text, "изменений в файлах нет") {
+		t.Errorf("text lacks the empty diff note:\n%s", text)
+	}
+}
+
+func TestGetCommitBudgetedDiff(t *testing.T) {
+	var files []string
+	for i := 0; i < 30; i++ {
+		files = append(files, fmt.Sprintf(`{"diff":%q,"new_path":"dir/file%02d.go","old_path":"dir/file%02d.go"}`, patchOf(1900), i, i))
+	}
+	fake := testutil.NewFakeGitLab(t)
+	fake.JSON("GET", commitRoute, 200, commitJSON("msg"), nil)
+	fake.JSON("GET", commitRoute+"/diff", 200, "["+strings.Join(files, ",")+"]", nil)
+	cs := newTestSession(t, fake)
+
+	text, isErr := callText(t, cs, "get_commit", map[string]any{"project": "g/p", "sha": "a1b2c3d4", "per_page": 30})
+	if isErr {
+		t.Fatalf("unexpected tool error: %s", text)
+	}
+	if n := utf8.RuneCountInString(text); n >= 15500 {
+		t.Errorf("text has %d runes, want < 15500", n)
+	}
+	if strings.Contains(text, TruncatedFooter) {
+		t.Errorf("the renderer must fit the budget without the final cut")
+	}
+	for i := 0; i < 30; i++ {
+		if !strings.Contains(text, fmt.Sprintf("### dir/file%02d.go [modified]", i)) {
+			t.Errorf("heading of file %d is missing", i)
+		}
+	}
+	if !strings.Contains(text, "патч не показан (бюджет вывода исчерпан)") {
+		t.Errorf("late files must say their patch is not shown")
+	}
+}
+
+func TestGetCommitErrors(t *testing.T) {
+	fake := testutil.NewFakeGitLab(t)
+	cs := newTestSession(t, fake)
+
+	text, isErr := callText(t, cs, "get_commit", map[string]any{"project": "g/p", "sha": "  "})
+	if !isErr || !strings.Contains(text, "не указан sha") {
+		t.Errorf("empty sha: isError=%v text=%q", isErr, text)
+	}
+	if reqs := fake.Requests(); len(reqs) != 0 {
+		t.Errorf("no request must reach GitLab, got %v", reqs)
+	}
+
+	text, isErr = callText(t, cs, "get_commit", map[string]any{"project": "g/p", "sha": "deadbeef"})
+	if !isErr || !strings.Contains(text, "404") || !strings.Contains(text, "коммит") {
+		t.Errorf("missing commit: isError=%v text=%q", isErr, text)
 	}
 }
