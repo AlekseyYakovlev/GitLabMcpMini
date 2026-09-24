@@ -14,7 +14,8 @@
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
 - [x] **Phase 1: Подключение и чтение проекта** - Рабочий stdio-сервер: агент проходит handshake, проверяет токен и читает проекты, дерево и файлы; фундамент и тестовый харнесс (completed 2026-09-24)
-- [x] **Phase 2: История и запись в репозиторий** - Агент смотрит ветки, коммиты, сравнения и вносит изменения: ветка, коммит нескольких файлов, правка одного файла (completed 2026-09-24)
+- [x] **Phase 2: История и запись в репозиторий** - Агент смотрит ветки, коммиты, сравнения и вносит изменения: ветка, коммит нескольких файлов, правка одного файла
+ (completed 2026-09-24)
 - [ ] **Phase 3: Merge Requests** - Агент просматривает MR (детали, diff, комментарии), создаёт, комментирует, правит и вливает MR
 - [ ] **Phase 4: Живая проверка и поставка** - Полный сценарий на реальном gitlab.com пройден; один `gitlab-mcp.exe` и README готовы к подключению агента
 
@@ -107,7 +108,28 @@ Plans:
   3. Пользователь может создать MR из ветки с изменениями (из Phase 2), добавить общий комментарий и изменить заголовок, описание или состояние MR
   4. Пользователь может влить MR (`merge_merge_request`): сервер проверяет `detailed_merge_status` и при отказе (405/406/409, непрошедшие проверки) возвращает понятное объяснение, а не сырую ошибку
 
-**Plans**: TBD
+**Plans**: 5 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 03-01-PLAN.md — MR read slice: list_merge_requests (state=opened by default) + get_merge_request with the shared detailed_merge_status table, 14-tool e2e/smoke
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 03-02-PLAN.md — MR review slice: get_merge_request_diffs (renderDiffFiles, overflow from changes_count) + list_merge_request_notes ([system]), 16 tools
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 03-03-PLAN.md — create_merge_request (compare pre-check, Draft prefix, 409 !N), MR write error layer + backlog 999.2, loopback-only smoke writes, 17 tools
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 03-04-PLAN.md — create_merge_request_note + update_merge_request (optional fields, state_event, draft), 19 tools
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [ ] 03-05-PLAN.md — merge_merge_request (GET pre-check gate, single PUT, 400/401/403/405/406/409/422 wording), full MR flow test, all 20 tools
 
 ### Phase 4: Живая проверка и поставка
 
@@ -133,7 +155,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. Подключение и чтение проекта | 6/6 | Complete   | 2026-09-24 |
 | 2. История и запись в репозиторий | 5/5 | Complete   | 2026-09-24 |
-| 3. Merge Requests | 0/TBD | Not started | - |
+| 3. Merge Requests | 0/5 | Planned | - |
 | 4. Живая проверка и поставка | 0/TBD | Not started | - |
 
 ## Backlog
