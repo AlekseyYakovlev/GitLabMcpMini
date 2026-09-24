@@ -84,7 +84,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 02-03-PLAN.md — compare_refs with server-side file paging, compare_timeout/same-ref states
+- [x] 02-03-PLAN.md — compare_refs with server-side file paging, compare_timeout/same-ref states
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
@@ -132,6 +132,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Подключение и чтение проекта | 6/6 | Complete   | 2026-09-24 |
-| 2. История и запись в репозиторий | 2/5 | In Progress|  |
+| 2. История и запись в репозиторий | 3/5 | In Progress|  |
 | 3. Merge Requests | 0/TBD | Not started | - |
 | 4. Живая проверка и поставка | 0/TBD | Not started | - |
