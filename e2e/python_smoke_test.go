@@ -90,6 +90,9 @@ func TestPythonSmoke(t *testing.T) {
 	fake.JSON("PUT", "/api/v4/projects/g%2Fp/merge_requests/5", 200,
 		`{"iid":5,"state":"opened","draft":false,"title":"smoke MR renamed","source_branch":"f","target_branch":"main",`+
 			`"detailed_merge_status":"mergeable","web_url":"https://gitlab.example/g/p/-/merge_requests/5"}`, nil)
+	fake.JSON("PUT", "/api/v4/projects/g%2Fp/merge_requests/5/merge", 200,
+		`{"iid":5,"state":"merged","merge_commit_sha":"m1","title":"smoke MR renamed","source_branch":"f","target_branch":"main",`+
+			`"web_url":"https://gitlab.example/g/p/-/merge_requests/5"}`, nil)
 	fake.JSON("POST", "/api/v4/projects/g%2Fp/merge_requests/5/notes", 201,
 		`{"id":42,"body":"smoke note","system":false}`, nil)
 	fake.JSON("GET", "/api/v4/projects/g%2Fp/merge_requests/5/diffs", 200,
@@ -158,6 +161,9 @@ func TestPythonSmoke(t *testing.T) {
 	}
 	if !strings.Contains(stdout.String(), "MR !5 обновлён") {
 		t.Errorf("stdout does not contain the update_merge_request result:\n%s", stdout.String())
+	}
+	if !strings.Contains(stdout.String(), "MR !5 влит") {
+		t.Errorf("stdout does not contain the merge_merge_request result:\n%s", stdout.String())
 	}
 	if strings.Contains(stdout.String(), testToken) || strings.Contains(stderr.String(), testToken) {
 		t.Errorf("smoke output leaks the token")

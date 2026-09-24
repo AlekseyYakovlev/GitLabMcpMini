@@ -58,6 +58,7 @@ EXPECTED_TOOLS = {
     "create_merge_request",
     "create_merge_request_note",
     "update_merge_request",
+    "merge_merge_request",
 }
 FAKE_SHA = "a1b2c3d4e5f6a7b8c9d0a1b2c3d4e5f6a7b8c9d0"
 FORBIDDEN_SCHEMA_KEYS = {"$ref", "$defs", "anyOf", "oneOf"}
@@ -264,6 +265,8 @@ async def run(exe: str, base_url: str | None, token: str, project: str, file_pat
                     {"project": project, "iid": 5, "title": "smoke MR renamed"},
                 )
                 check("MR !5 обновлён" in updated_mr, f"update_merge_request result lacks the update line: {updated_mr}")
+                merged_mr = await call("merge_merge_request", {"project": project, "iid": 5})
+                check("MR !5 влит" in merged_mr, f"merge_merge_request result lacks the merged line: {merged_mr}")
             missing = await call(
                 "get_project",
                 {"project": "no-such-group-xyz/no-such-project"},

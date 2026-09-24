@@ -200,6 +200,7 @@ Plans:
 ### Phase 999.5: smoke.py: записи только против loopback/фейка, не против gitlab.com (BACKLOG)
 
 **Goal:** Запускать `create_branch`, `commit_files` и перезапись README только при loopback-хосте или явном флаге. Иначе любой `--base-url`, включая gitlab.com, считается «hermetic». Обязательно до Phase 4. Источник: 02-REVIEW WR-04.
+**Status:** write guard implemented in Phase 3 (plan 03-03, `is_loopback` in scripts/smoke.py): all smoke writes run only against 127.0.0.1/localhost/::1. Close after the author confirms.
 **Requirements:** TBD
 **Plans:** 0 plans
 
