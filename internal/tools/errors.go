@@ -3,6 +3,7 @@ package tools
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"gitlab-mcp/internal/glclient"
 )
@@ -58,7 +59,8 @@ func withWrite(op, subject string, err error) error {
 func toToolText(err error) string {
 	subject := defaultNotFoundSubject
 	var se *subjectError
-	if errors.As(err, &se) && se.subject != "" {
+	hasSubject := errors.As(err, &se)
+	if hasSubject && se.subject != "" {
 		subject = se.subject
 	}
 
@@ -67,6 +69,17 @@ func toToolText(err error) string {
 		return ""
 	}
 
+	if hasSubject && se.write {
+		if text, ok := writeText(e, se.op, subject); ok {
+			return text
+		}
+	}
+	return baseText(e, subject)
+}
+
+// baseText is the generic wording of a classified failure, shared by read and
+// write tools.
+func baseText(e *glclient.Error, subject string) string {
 	switch e.Kind {
 	case glclient.KindUnauthorized:
 		return "401: GitLab отклонил токен (недействителен, просрочен или отозван). Проверьте GITLAB_TOKEN."
@@ -96,6 +109,88 @@ func toToolText(err error) string {
 		return "Неожиданный ответ GitLab (не удалось разобрать JSON)."
 	}
 	return capDetail(e.Detail)
+}
+
+// statusPrefix renders the real HTTP status GitLab answered with. GitLab maps
+// several statuses (400, 409, 422, ...) to one failure kind, so the wording
+// must not hard-code a code.
+func statusPrefix(e *glclient.Error) string {
+	if e.Status == 0 {
+		return "400: "
+	}
+	return fmt.Sprintf("%d: ", e.Status)
+}
+
+// writeRule words one recognisable write failure. text carries no status
+// digits (writeText prepends the real status); a "%s" in text is replaced by
+// the capped GitLab detail.
+type writeRule struct {
+	kind glclient.Kind
+	// op restricts the rule to one write operation; "" matches any.
+	op string
+	// substrings are lowercase; the rule matches when any is contained in the
+	// lowercased GitLab detail.
+	substrings []string
+	text       string
+}
+
+// writeRules are consulted in order before the kind-level write wording.
+var writeRules = []writeRule{
+	{
+		kind:       glclient.KindBadRequest,
+		op:         opCreateBranch,
+		substrings: []string{"already exists"},
+		text:       "ветка уже существует: выберите другое имя или используйте существующую ветку.",
+	},
+	{
+		kind:       glclient.KindBadRequest,
+		op:         opCreateBranch,
+		substrings: []string{"branch name is invalid"},
+		text:       "недопустимое имя ветки: %s",
+	},
+	{
+		kind:       glclient.KindBadRequest,
+		substrings: []string{"invalid reference name", "ref is missing"},
+		text:       "исходный ref не найден: укажите существующую ветку, тег или SHA. %s",
+	},
+}
+
+// writeUnknownOutcome is appended to failures after which a write may still
+// have been applied.
+const writeUnknownOutcome = " Результат записи неизвестен: изменение могло быть применено. " +
+	"Проверьте состояние (list_branches, list_commits) перед повтором."
+
+// writeText words a failure of a state-changing request. It returns false when
+// the generic wording of baseText should be used instead.
+func writeText(e *glclient.Error, op, subject string) (string, bool) {
+	detail := strings.ToLower(e.Detail)
+	for _, r := range writeRules {
+		if r.kind != e.Kind || (r.op != "" && r.op != op) {
+			continue
+		}
+		for _, sub := range r.substrings {
+			if !strings.Contains(detail, sub) {
+				continue
+			}
+			text := r.text
+			if strings.Contains(text, "%s") {
+				text = fmt.Sprintf(text, capDetail(e.Detail))
+			}
+			return statusPrefix(e) + text, true
+		}
+	}
+
+	switch e.Kind {
+	case glclient.KindForbidden:
+		return "403: запись отклонена: ветка может быть защищена, у токена может не быть scope `api`, " +
+			"или ваша роль в проекте ниже Developer. " +
+			"Создайте свою ветку (create_branch), коммитьте в неё, затем откройте MR.", true
+	case glclient.KindUnauthorized:
+		return baseText(e, subject) + " Для записи нужен токен со scope `api`.", true
+	case glclient.KindServer, glclient.KindTimeout, glclient.KindNetwork:
+		return baseText(e, subject) + writeUnknownOutcome, true
+	}
+	return "", false
 }
 
 // maxDetailRunes caps GitLab- or network-supplied text in a tool message.

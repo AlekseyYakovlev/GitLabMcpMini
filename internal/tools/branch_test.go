@@ -2,6 +2,7 @@ package tools
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
@@ -240,5 +241,39 @@ func TestFakeRecordedAndReset(t *testing.T) {
 	fake.Reset()
 	if len(fake.Recorded()) != 0 || len(fake.Requests()) != 0 {
 		t.Error("Reset must clear both")
+	}
+}
+
+func TestCreateBranchServerErrorIsSentOnce(t *testing.T) {
+	fake := testutil.NewFakeGitLab(t)
+	fake.JSON("POST", branchesPath, 503, `<html>unavailable</html>`, nil)
+	cs := newTestSession(t, fake)
+
+	text, isErr := callText(t, cs, "create_branch", map[string]any{"project": "g/p", "branch": "feature/x", "ref": "main"})
+	if !isErr {
+		t.Fatalf("expected isError, got %q", text)
+	}
+	if !strings.Contains(text, "Результат записи неизвестен") {
+		t.Errorf("text = %q", text)
+	}
+	if n := len(requestsTo(fake, "POST /api/v4/projects/g%2Fp/repository/branches")); n != 1 {
+		t.Errorf("POST was sent %d times, want exactly 1", n)
+	}
+}
+
+func TestCreateBranchAlreadyExistsShowsRealStatus(t *testing.T) {
+	for _, status := range []int{400, 409} {
+		fake := testutil.NewFakeGitLab(t)
+		fake.JSON("POST", branchesPath, status, `{"message":"Branch already exists"}`, nil)
+		cs := newTestSession(t, fake)
+
+		text, isErr := callText(t, cs, "create_branch", map[string]any{"project": "g/p", "branch": "feature/x", "ref": "main"})
+		if !isErr {
+			t.Fatalf("status %d: expected isError, got %q", status, text)
+		}
+		want := fmt.Sprintf("%d: ветка уже существует", status)
+		if !strings.HasPrefix(text, want) {
+			t.Errorf("status %d: text = %q, want prefix %q", status, text, want)
+		}
 	}
 }
