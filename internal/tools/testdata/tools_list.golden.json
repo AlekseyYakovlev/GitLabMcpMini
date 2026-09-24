@@ -641,6 +641,53 @@
   },
   {
     "annotations": {
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "readOnlyHint": false
+    },
+    "description": "Изменяет Merge Request: title, description, target_branch, state_event, draft. Меняются только непустые поля; пустое значение означает «не менять», поэтому описание нельзя очистить, а флаги нельзя сбросить пустым значением. state_event=close закрывает MR, reopen открывает закрытый заново. draft=true добавляет к заголовку префикс «Draft:»; чтобы снять Draft, передайте title без этого префикса (draft=false означает «не передано»). Запрос никогда не повторяется автоматически. Запись требует токен со scope api и роль Developer или выше.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "description": "new description in Markdown; empty means unchanged",
+          "type": "string"
+        },
+        "draft": {
+          "description": "true marks the MR as Draft; to remove Draft send title without the Draft: prefix",
+          "type": "boolean"
+        },
+        "iid": {
+          "description": "merge request IID, the number after ! in GitLab",
+          "type": "integer"
+        },
+        "project": {
+          "description": "numeric project ID as a string (\"12345\") or full path group/subgroup/project",
+          "type": "string"
+        },
+        "state_event": {
+          "description": "close or reopen",
+          "type": "string"
+        },
+        "target_branch": {
+          "description": "new target branch; empty means unchanged",
+          "type": "string"
+        },
+        "title": {
+          "description": "new title; empty means unchanged",
+          "type": "string"
+        }
+      },
+      "required": [
+        "project",
+        "iid"
+      ],
+      "type": "object"
+    },
+    "name": "update_merge_request"
+  },
+  {
+    "annotations": {
       "idempotentHint": false,
       "readOnlyHint": true
     },

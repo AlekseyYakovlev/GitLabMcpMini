@@ -104,6 +104,12 @@ func Register(s *mcp.Server, d Deps) {
 	}, safe(d, createMergeRequestNote(d)))
 
 	mcp.AddTool(s, &mcp.Tool{
+		Name:        "update_merge_request",
+		Description: updateMergeRequestDescription,
+		Annotations: &mcp.ToolAnnotations{DestructiveHint: gitlab.Ptr(true)},
+	}, safe(d, updateMergeRequest(d)))
+
+	mcp.AddTool(s, &mcp.Tool{
 		Name:        "commit_files",
 		Description: commitFilesDescription,
 		InputSchema: commitFilesSchema(),

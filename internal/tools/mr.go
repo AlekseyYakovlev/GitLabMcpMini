@@ -39,6 +39,15 @@ const createMergeRequestDescription = "Создаёт Merge Request из source_
 	"Запрос никогда не повторяется автоматически. " +
 	"Запись требует токен со scope api и роль Developer или выше."
 
+const updateMergeRequestDescription = "Изменяет Merge Request: title, description, target_branch, " +
+	"state_event, draft. Меняются только непустые поля; пустое значение означает «не менять», " +
+	"поэтому описание нельзя очистить, а флаги нельзя сбросить пустым значением. " +
+	"state_event=close закрывает MR, reopen открывает закрытый заново. " +
+	"draft=true добавляет к заголовку префикс «Draft:»; чтобы снять Draft, передайте title без этого префикса " +
+	"(draft=false означает «не передано»). " +
+	"Запрос никогда не повторяется автоматически. " +
+	"Запись требует токен со scope api и роль Developer или выше."
+
 // checkBeforeMergeHint reminds the agent that a fresh MR has no merge verdict yet.
 const checkBeforeMergeHint = "статус слияния обычно ещё checking: перед merge_merge_request вызовите get_merge_request"
 
@@ -90,6 +99,17 @@ type CreateMRIn struct {
 	TargetBranch string `json:"target_branch,omitempty" jsonschema:"branch to merge into; default the project's default branch"`
 	Description  string `json:"description,omitempty" jsonschema:"merge request description in Markdown"`
 	Draft        bool   `json:"draft,omitempty" jsonschema:"true marks the MR as Draft (title prefix Draft:)"`
+}
+
+// UpdateMRIn is the input of update_merge_request.
+type UpdateMRIn struct {
+	Project      string `json:"project" jsonschema:"numeric project ID as a string (\"12345\") or full path group/subgroup/project"`
+	IID          int    `json:"iid" jsonschema:"merge request IID, the number after ! in GitLab"`
+	Title        string `json:"title,omitempty" jsonschema:"new title; empty means unchanged"`
+	Description  string `json:"description,omitempty" jsonschema:"new description in Markdown; empty means unchanged"`
+	TargetBranch string `json:"target_branch,omitempty" jsonschema:"new target branch; empty means unchanged"`
+	StateEvent   string `json:"state_event,omitempty" jsonschema:"close or reopen"`
+	Draft        bool   `json:"draft,omitempty" jsonschema:"true marks the MR as Draft; to remove Draft send title without the Draft: prefix"`
 }
 
 // checkIID rejects a merge request number that cannot exist, before any request.
@@ -368,4 +388,95 @@ func createMRError(ctx context.Context, d Deps, project, source string, err erro
 		}
 	}
 	return errors.New(ref + ". Используйте его (get_merge_request) или закройте.")
+}
+
+// updateMergeRequest returns the handler for the update_merge_request tool. Only
+// non-empty fields are sent, so nothing is blanked by accident. The PUT is sent
+// exactly once and never retried.
+func updateMergeRequest(d Deps) func(ctx context.Context, in UpdateMRIn) (string, error) {
+	return func(ctx context.Context, in UpdateMRIn) (string, error) {
+		project, err := glclient.NormalizeProject(in.Project)
+		if err != nil {
+			return "", err
+		}
+		if err := checkIID(in.IID); err != nil {
+			return "", err
+		}
+		title := strings.TrimSpace(in.Title)
+		description := strings.TrimSpace(in.Description)
+		target := strings.TrimSpace(in.TargetBranch)
+		stateEvent := strings.TrimSpace(in.StateEvent)
+		if stateEvent != "" && stateEvent != "close" && stateEvent != "reopen" {
+			return "", errors.New("state_event: допустимо close или reopen")
+		}
+		if title == "" && description == "" && target == "" && stateEvent == "" && !in.Draft {
+			return "", errors.New("нечего менять: передайте title, description, target_branch, state_event или draft=true")
+		}
+
+		// A Draft MR without a new title needs the current one to prefix.
+		var current *gitlab.MergeRequest
+		if in.Draft {
+			if title != "" {
+				title = withDraftPrefix(title)
+			} else {
+				current, _, err = d.GL.MergeRequests.GetMergeRequest(project, int64(in.IID), nil, gitlab.WithContext(ctx))
+				if err != nil {
+					return "", withSubject(mrSubject, err)
+				}
+				if !current.Draft && !draftPrefix.MatchString(current.Title) {
+					title = withDraftPrefix(current.Title)
+				}
+			}
+		}
+
+		opts := &gitlab.UpdateMergeRequestOptions{}
+		var changed []string
+		if title != "" {
+			opts.Title = gitlab.Ptr(title)
+			changed = append(changed, "title")
+		}
+		if description != "" {
+			opts.Description = gitlab.Ptr(description)
+			changed = append(changed, "description")
+		}
+		if target != "" {
+			opts.TargetBranch = gitlab.Ptr(target)
+			changed = append(changed, "target_branch")
+		}
+		if stateEvent != "" {
+			opts.StateEvent = gitlab.Ptr(stateEvent)
+			changed = append(changed, "state_event")
+		}
+		if in.Draft && opts.Title != nil {
+			changed = append(changed, "draft")
+		}
+
+		if len(changed) == 0 {
+			out := fmt.Sprintf("MR !%d уже помечен как Draft; изменений нет", in.IID)
+			if current != nil && current.WebURL != "" {
+				out += "\n" + current.WebURL
+			}
+			return out, nil
+		}
+
+		mr, _, err := d.GL.MergeRequests.UpdateMergeRequest(project, int64(in.IID), opts, gitlab.WithContext(ctx))
+		if err != nil {
+			return "", withWrite(opUpdateMR, mrSubject, err)
+		}
+
+		draft := "нет"
+		if mr.Draft {
+			draft = "да"
+		}
+		lines := []string{
+			fmt.Sprintf("MR !%d обновлён: %s", in.IID, strings.Join(changed, ", ")),
+			"state: " + mr.State,
+			"draft: " + draft,
+			"ветки: " + mr.SourceBranch + "→" + mr.TargetBranch,
+		}
+		if mr.WebURL != "" {
+			lines = append(lines, mr.WebURL)
+		}
+		return strings.Join(lines, "\n"), nil
+	}
 }
