@@ -121,7 +121,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 03-03-PLAN.md — create_merge_request (compare pre-check, Draft prefix, 409 !N), MR write error layer + backlog 999.2, loopback-only smoke writes, 17 tools
+- [x] 03-03-PLAN.md — create_merge_request (compare pre-check, Draft prefix, 409 !N), MR write error layer + backlog 999.2, loopback-only smoke writes, 17 tools
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
@@ -155,7 +155,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. Подключение и чтение проекта | 6/6 | Complete   | 2026-09-24 |
 | 2. История и запись в репозиторий | 5/5 | Complete   | 2026-09-24 |
-| 3. Merge Requests | 2/5 | In Progress|  |
+| 3. Merge Requests | 3/5 | In Progress|  |
 | 4. Живая проверка и поставка | 0/TBD | Not started | - |
 
 ## Backlog

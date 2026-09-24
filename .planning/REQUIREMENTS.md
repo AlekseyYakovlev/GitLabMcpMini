@@ -34,7 +34,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **MR-02**: `get_merge_request` — детали MR, включая `detailed_merge_status`
 - [x] **MR-03**: `get_merge_request_diffs` — постраничный diff по файлам; флаги `collapsed`/`too_large`/`overflow` показываются явно
 - [x] **MR-04**: `list_merge_request_notes` — комментарии MR (системные помечены)
-- [ ] **MR-05**: `create_merge_request` — создание MR из ветки
+- [x] **MR-05**: `create_merge_request` — создание MR из ветки
 - [ ] **MR-06**: `create_merge_request_note` — общий комментарий к MR
 - [ ] **MR-07**: `merge_merge_request` — merge с проверкой `detailed_merge_status` и понятными сообщениями об отказе
 - [ ] **MR-08**: `update_merge_request` — правка заголовка, описания, состояния MR
@@ -125,7 +125,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | MR-02 | Phase 3 | Complete |
 | MR-03 | Phase 3 | Complete |
 | MR-04 | Phase 3 | Complete |
-| MR-05 | Phase 3 | Pending |
+| MR-05 | Phase 3 | Complete |
 | MR-06 | Phase 3 | Pending |
 | MR-07 | Phase 3 | Pending |
 | MR-08 | Phase 3 | Pending |
