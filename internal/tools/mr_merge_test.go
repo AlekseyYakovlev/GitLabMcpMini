@@ -223,3 +223,37 @@ func TestMergeMergeRequestZeroIID(t *testing.T) {
 		t.Errorf("no request expected, got %v", reqs)
 	}
 }
+
+func TestMergeMergeRequestPutFailures(t *testing.T) {
+	cases := []struct {
+		name   string
+		status int
+		body   string
+		prefix string
+		wants  []string
+	}{
+		{"405 after the check", 405, `{"message":"405 Method Not Allowed"}`, "405: слияние отклонено", []string{"get_merge_request"}},
+		{"503 outcome unknown", 503, `{"message":"boom"}`, "503: ", []string{"Результат записи неизвестен", "get_merge_request"}},
+		{"401 no permission", 401, `{"message":"401 Unauthorized"}`, "401: нет прав вливать", nil},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			fake := newMergeFake(t)
+			fake.JSON("PUT", mr5MergePath, tc.status, tc.body, nil)
+			cs := newTestSession(t, fake)
+
+			text, isErr := callText(t, cs, "merge_merge_request", map[string]any{"project": "g/p", "iid": 5})
+			if !isErr || !strings.HasPrefix(text, tc.prefix) {
+				t.Fatalf("isErr=%v text=%q, want error starting %q", isErr, text, tc.prefix)
+			}
+			for _, w := range tc.wants {
+				if !strings.Contains(text, w) {
+					t.Errorf("text %q lacks %q", text, w)
+				}
+			}
+			if puts := requestsTo(fake, "PUT "); len(puts) != 1 {
+				t.Errorf("PUT count = %d, want exactly 1 (a merge is never retried)", len(puts))
+			}
+		})
+	}
+}

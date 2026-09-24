@@ -150,6 +150,46 @@ type writeRule struct {
 // specific phrases only.
 var writeRules = []writeRule{
 	{
+		kind:   glclient.KindBadRequest,
+		op:     opMergeMR,
+		status: 405,
+		text:   "слияние отклонено: MR сейчас нельзя влить (состояние изменилось после проверки или MR уже влит/закрыт). Вызовите get_merge_request.",
+	},
+	{
+		kind:   glclient.KindBadRequest,
+		op:     opMergeMR,
+		status: 406,
+		text:   "слияние отклонено: MR сейчас нельзя влить (состояние изменилось после проверки или MR уже влит/закрыт). Вызовите get_merge_request.",
+	},
+	{
+		kind:   glclient.KindBadRequest,
+		op:     opMergeMR,
+		status: 409,
+		text:   "ветка-источник изменилась после проверки; вызовите get_merge_request и повторите слияние осознанно.",
+	},
+	{
+		kind:       glclient.KindBadRequest,
+		op:         opMergeMR,
+		substrings: []string{"branch cannot be merged"},
+		text:       "GitLab не смог влить MR (вероятно конфликт или изменилась целевая ветка). Вызовите get_merge_request.",
+	},
+	{
+		kind:       glclient.KindBadRequest,
+		op:         opMergeMR,
+		substrings: []string{"sha must be provided"},
+		text:       "в группе или инстансе включено требование sha при merge; этот инструмент sha не передаёт (MRX-03, v2). Влейте MR в GitLab.",
+	},
+	{
+		kind: glclient.KindUnauthorized,
+		op:   opMergeMR,
+		text: "нет прав вливать этот MR (роль ниже Developer/Maintainer или защита целевой ветки).",
+	},
+	{
+		kind: glclient.KindForbidden,
+		op:   opMergeMR,
+		text: "нет прав на слияние: целевая ветка защищена или ваша роль не позволяет вливать; у токена должен быть scope api.",
+	},
+	{
 		kind:       glclient.KindBadRequest,
 		op:         opCreateMR,
 		substrings: []string{"you must select different branches", "same project/branch", "same branch"},
