@@ -407,17 +407,17 @@ Assert with `fake.Recorded()` (bodies) that a blocked merge sent NO `PUT .../mer
 | A5 | Fast-forward merge projects return an empty `merge_commit_sha` | Pattern 4 | Success text falls back to `SquashCommitSHA`/`sha`, labelled |
 | A6 | gitlab.com currently serves the GitLab version documented on master (19.x docs mention 19.2 features) | Pitfall 6 | The `sha`-required 400 may not apply yet; mapping is harmless |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Send the pre-checked `sha` on merge?**
+1. **Send the pre-checked `sha` on merge?** RESOLVED: follow D-13, no sha sent (plan 03-05); the author question is carried in the 03-05 SUMMARY.
    - What we know: the merge handler already has `mr.SHA` from the pre-check GET; sending it as `sha` closes the GET-to-PUT race (409 if the head moved) and satisfies a group "require SHA" setting (400 otherwise). CONTEXT D-13 / MRX-03 say the sha protection stays v2 as a user-facing parameter.
    - What's unclear: whether the author considers an internal, non-parameter `sha` a violation of the deferral.
    - Recommendation: follow the locked text (do not send `sha`), map the 400 "SHA must be provided" text clearly, and list the internal-sha idea for the discuss-phase/user. If accepted it is a one-line change (`SHA: gitlab.Ptr(mr.SHA)`).
-2. **Un-drafting is impossible via `draft` (D-10)**
+2. **Un-drafting is impossible via `draft` (D-10)** RESOLVED in 03-04 (title without the `Draft:` prefix; documented in the update_merge_request description).
    - `draft=false` means "not passed", yet `draft_status` blocks merge. Resolution inside D-10: the status advice tells the agent to send `title` without the `Draft:` prefix (works because non-empty `title` changes the field). Document the same in the `update_merge_request` description. Flag to the user if a real `draft=false` is wanted later (needs the 999.1-style pointer/flag approach).
-3. **Cost of the `create_merge_request` compare pre-check**
+3. **Cost of the `create_merge_request` compare pre-check** RESOLVED (accepted) in 03-03.
    - Adds up to 2 reads (project for default branch, compare) before the POST. Acceptable for a write tool; if the author objects, the alternative is to accept GitLab's silent empty Draft MR and warn after creation (violates D-09's "ничего не меняется молча").
-4. **Optional `[inline path:line]` marker for diff notes**: not required by MR-04; planner may skip.
+4. **Optional `[inline path:line]` marker for diff notes**: not required by MR-04; planner may skip. RESOLVED (skipped).
 
 ## Environment Availability
 
