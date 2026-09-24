@@ -29,4 +29,10 @@ func Register(s *mcp.Server, d Deps) {
 		Description: listRepositoryTreeDescription,
 		Annotations: &mcp.ToolAnnotations{ReadOnlyHint: true},
 	}, safe(d, listRepositoryTree(d)))
+
+	mcp.AddTool(s, &mcp.Tool{
+		Name:        "get_file_contents",
+		Description: getFileContentsDescription,
+		Annotations: &mcp.ToolAnnotations{ReadOnlyHint: true},
+	}, safe(d, getFileContents(d)))
 }
