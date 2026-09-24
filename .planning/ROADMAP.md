@@ -150,9 +150,9 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 04-01-PLAN.md — Backlog 999.1: commit_files/create_or_update_file reject empty content before any request, descriptions + golden, 999.1 closed
-- [ ] 04-02-PLAN.md — scripts/live.py: opt-in live scenario (read → branch → commit → MR → note → merge), D-08 error block, REST cleanup, redacted LIVE-RUN.md; hermetic usage test
-- [ ] 04-03-PLAN.md — Delivery: no-external-deps build test (debug/pe) + Russian README (build, scopes, agent UI/JSON config, 20 tools, limits)
+- [x] 04-01-PLAN.md — Backlog 999.1: commit_files/create_or_update_file reject empty content before any request, descriptions + golden, 999.1 closed
+- [x] 04-02-PLAN.md — scripts/live.py: opt-in live scenario (read → branch → commit → MR → note → merge), D-08 error block, REST cleanup, redacted LIVE-RUN.md; hermetic usage test
+- [x] 04-03-PLAN.md — Delivery: no-external-deps build test (debug/pe) + Russian README (build, scopes, agent UI/JSON config, 20 tools, limits)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -168,7 +168,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 1. Подключение и чтение проекта | 6/6 | Complete   | 2026-09-24 |
 | 2. История и запись в репозиторий | 5/5 | Complete   | 2026-09-24 |
 | 3. Merge Requests | 5/5 | Complete   | 2026-09-24 |
-| 4. Живая проверка и поставка | 0/4 | Planned | - |
+| 4. Живая проверка и поставка | 3/4 | In Progress|  |
 
 ## Backlog
 
