@@ -618,21 +618,26 @@ c.PersonalAccessTokens.GetSinglePersonalAccessToken(gitlab.WithContext(ctx)) // 
 
 **Tagged claims in this document:** everything not marked `[VERIFIED]`/`[CITED]` above was checked by executing code in the spike or reading client-go v2.64.0 / go-sdk v1.8.0 source in the local module cache, except the six items above.
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **`+` and other path characters on real gitlab.com**
    - What we know: client-go leaves `+` literal in path segments; `%2B` would be the strictest encoding; Rack treats `+` in paths as a plus.
    - What's unclear: whether gitlab.com's edge (Cloudflare/Workhorse) behaves identically for `repository/files/a+b.txt`.
    - Recommendation: keep client-go's behaviour (it is what every Go GitLab tool sends); add a file named `a+b.txt` to the live smoke set (author's test project) and record the result. No code change planned unless it fails.
+   - RESOLVED: keep client-go's path encoding unchanged in Phase 1; the live `+` check moves to Phase 4 (QA-03).
 2. **`simple=true` and `default_branch` (A2), tree `X-Next-Page` (A3), PAT self (A4)**
    - Recommendation: the Python smoke script's optional live mode should print the first `list_projects` page, one tree page with `per_page=1`, and `whoami`, so the author can eyeball all three once with a real token. Phase 1 acceptance stays hermetic.
+   - RESOLVED: optional live mode in `scripts/smoke.py` (Plan 06 Task 2) prints these; Phase 1 acceptance is hermetic only.
 3. **Should numeric project IDs also be accepted as JSON numbers?**
    - What we know: strict schema rejects `123` with a readable error (verified).
    - Recommendation: keep strict for Phase 1 (schema-inferred, flat); revisit only if the agent's model repeatedly sends numbers.
+   - RESOLVED: strict string schema; a JSON number is rejected with a readable isError (Plan 04 test).
 4. **Tool annotations** (`ReadOnlyHint: true` on the five tools).
    - REQUIREMENTS lists UX-01 as v2, CLAUDE.md calls them cheap. Recommendation: add `Annotations: &mcp.ToolAnnotations{ReadOnlyHint: true}` on these read tools (one line, no schema impact); planner may drop it.
+   - RESOLVED: `ReadOnlyHint: true` is added on all five read tools (Plans 01, 04, 05, 06); this partially lands v2 UX-01 early.
 5. **Default-branch cache**
    - Recommendation: small `sync.Mutex` map with 60 s TTL; skip if the planner prefers zero state (cost: one extra call per file read when `ref` is empty).
+   - RESOLVED: zero state, no cache; `resolveRef` calls GetProject when `ref` is empty.
 
 ## Environment Availability
 
