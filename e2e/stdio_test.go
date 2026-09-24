@@ -194,7 +194,7 @@ func TestStdioWirePaths(t *testing.T) {
 		names = append(names, tool.Name)
 	}
 	sort.Strings(names)
-	wantNames := []string{"create_branch", "get_file_contents", "get_project", "list_branches", "list_projects", "list_repository_tree", "whoami"}
+	wantNames := []string{"create_branch", "get_commit", "get_file_contents", "get_project", "list_branches", "list_commits", "list_projects", "list_repository_tree", "whoami"}
 	if strings.Join(names, ",") != strings.Join(wantNames, ",") {
 		t.Fatalf("tools = %v, want %v", names, wantNames)
 	}
