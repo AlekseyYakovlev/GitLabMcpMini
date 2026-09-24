@@ -283,6 +283,117 @@ func TestCreateMergeRequestCompare404NamesBranchOrProject(t *testing.T) {
 	}
 }
 
+func TestCreateMergeRequestDuplicateNumberFromMessage(t *testing.T) {
+	fake := newCreateMRFake(t)
+	fake.JSON("POST", mrsPath, 409, `{"message":["Another open merge request already exists for this source branch: !5"]}`, nil)
+	cs := newTestSession(t, fake)
+
+	text, isErr := callText(t, cs, "create_merge_request", map[string]any{
+		"project": "g/p", "source_branch": "feature/x", "title": "Add x", "target_branch": "main",
+	})
+	if !isErr || !strings.HasPrefix(text, "открытый MR уже есть: !5") {
+		t.Fatalf("isErr=%v text=%q", isErr, text)
+	}
+	if n := countPosts(fake); n != 1 {
+		t.Errorf("POST count = %d, want 1", n)
+	}
+	if lookups := requestsTo(fake, "GET "+mrsPath); len(lookups) != 0 {
+		t.Errorf("no list lookup expected when the message carries the number: %v", lookups)
+	}
+}
+
+func TestCreateMergeRequestDuplicateLooksUpByBranch(t *testing.T) {
+	fake := newCreateMRFake(t)
+	fake.JSON("POST", mrsPath, 409, `{"message":["Another open merge request already exists for this source branch"]}`, nil)
+	fake.JSON("GET", mrsPath, 200, `[{"iid":9,"state":"opened","title":"Add x","source_branch":"feature/x","target_branch":"main","web_url":"https://gitlab.example/g/p/-/merge_requests/9"}]`, nil)
+	cs := newTestSession(t, fake)
+
+	text, isErr := callText(t, cs, "create_merge_request", map[string]any{
+		"project": "g/p", "source_branch": "feature/x", "title": "Add x", "target_branch": "main",
+	})
+	if !isErr {
+		t.Fatalf("a duplicate must stay an error, got %q", text)
+	}
+	if !strings.HasPrefix(text, "открытый MR уже есть: !9 (https://gitlab.example/g/p/-/merge_requests/9)") {
+		t.Errorf("text = %q", text)
+	}
+	lookups := requestsTo(fake, "GET "+mrsPath)
+	if len(lookups) != 1 {
+		t.Fatalf("lookups = %v, want exactly one", lookups)
+	}
+	q, err := url.ParseQuery(lookups[0][strings.Index(lookups[0], "?")+1:])
+	if err != nil {
+		t.Fatal(err)
+	}
+	if q.Get("state") != "opened" || q.Get("source_branch") != "feature/x" || q.Get("per_page") != "1" {
+		t.Errorf("lookup query = %v", q)
+	}
+	if n := countPosts(fake); n != 1 {
+		t.Errorf("POST count = %d, want 1", n)
+	}
+}
+
+func TestCreateMergeRequestDuplicateLookupFailureStillErrors(t *testing.T) {
+	fake := newCreateMRFake(t)
+	fake.JSON("POST", mrsPath, 409, `{"message":["Another open merge request already exists for this source branch"]}`, nil)
+	fake.JSON("GET", mrsPath, 200, `[]`, nil)
+	cs := newTestSession(t, fake)
+
+	text, isErr := callText(t, cs, "create_merge_request", map[string]any{
+		"project": "g/p", "source_branch": "feature/x", "title": "Add x", "target_branch": "main",
+	})
+	if !isErr || !strings.Contains(text, "открытый MR из этой ветки уже есть") || !strings.Contains(text, "list_merge_requests") {
+		t.Fatalf("isErr=%v text=%q", isErr, text)
+	}
+}
+
+func TestCreateMergeRequestServerErrorIsSentOnce(t *testing.T) {
+	fake := newCreateMRFake(t)
+	fake.JSON("POST", mrsPath, 503, `<html>unavailable</html>`, nil)
+	cs := newTestSession(t, fake)
+
+	text, isErr := callText(t, cs, "create_merge_request", map[string]any{
+		"project": "g/p", "source_branch": "feature/x", "title": "Add x", "target_branch": "main",
+	})
+	if !isErr {
+		t.Fatalf("expected isError, got %q", text)
+	}
+	for _, want := range []string{"Результат записи неизвестен", "list_merge_requests", "source_branch"} {
+		if !strings.Contains(text, want) {
+			t.Errorf("text %q lacks %q", text, want)
+		}
+	}
+	if strings.Contains(text, "повторите позже") {
+		t.Errorf("a write failure must not invite a plain retry: %q", text)
+	}
+	if n := countPosts(fake); n != 1 {
+		t.Errorf("POST was sent %d times, want exactly 1", n)
+	}
+}
+
+func TestCreateMergeRequestBranchErrors(t *testing.T) {
+	cases := []struct {
+		name, body, prefix string
+	}{
+		{"same branches", `{"message":["You must select different branches"]}`, "422: ветка-источник совпадает с целевой"},
+		{"missing branch", `{"message":["Source branch \"x\" does not exist"]}`, "422: ветка не найдена"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			fake := newCreateMRFake(t)
+			fake.JSON("POST", mrsPath, 422, tc.body, nil)
+			cs := newTestSession(t, fake)
+
+			text, isErr := callText(t, cs, "create_merge_request", map[string]any{
+				"project": "g/p", "source_branch": "feature/x", "title": "Add x", "target_branch": "main",
+			})
+			if !isErr || !strings.HasPrefix(text, tc.prefix) {
+				t.Fatalf("isErr=%v text=%q, want prefix %q", isErr, text, tc.prefix)
+			}
+		})
+	}
+}
+
 func TestWithDraftPrefix(t *testing.T) {
 	cases := map[string]string{
 		"Add x":         "Draft: Add x",

@@ -132,8 +132,11 @@ type writeRule struct {
 	kind glclient.Kind
 	// op restricts the rule to one write operation; "" matches any.
 	op string
+	// status restricts the rule to one HTTP status; 0 matches any status.
+	status int
 	// substrings are lowercase; the rule matches when any is contained in the
-	// lowercased GitLab detail.
+	// lowercased GitLab detail. A rule without substrings matches on kind, op
+	// and status alone.
 	substrings []string
 	text       string
 }
@@ -146,6 +149,18 @@ type writeRule struct {
 // clash. Rules without an op apply to every write and are matched by their
 // specific phrases only.
 var writeRules = []writeRule{
+	{
+		kind:       glclient.KindBadRequest,
+		op:         opCreateMR,
+		substrings: []string{"you must select different branches", "same project/branch", "same branch"},
+		text:       "ветка-источник совпадает с целевой: укажите другую target_branch.",
+	},
+	{
+		kind:       glclient.KindBadRequest,
+		op:         opCreateMR,
+		substrings: []string{"does not exist"},
+		text:       "ветка не найдена: проверьте source_branch/target_branch (list_branches). %s",
+	},
 	{
 		kind:       glclient.KindBadRequest,
 		op:         opCreateBranch,
@@ -191,28 +206,52 @@ var writeRules = []writeRule{
 }
 
 // writeUnknownOutcome is appended to failures after which a write may still
-// have been applied.
-const writeUnknownOutcome = " Результат записи неизвестен: изменение могло быть применено. " +
-	"Проверьте состояние (list_branches, list_commits) перед повтором."
+// have been applied. unknownOutcomeHint adds where to check.
+const writeUnknownOutcome = " Результат записи неизвестен: изменение могло быть применено. "
+
+// unknownOutcomeHint says where to look before repeating a write whose outcome
+// is unknown.
+func unknownOutcomeHint(op string) string {
+	switch op {
+	case opCreateMR:
+		return "Проверьте list_merge_requests (source_branch=<ветка>) перед повтором."
+	case opUpdateMR, opMergeMR:
+		return "Проверьте состояние через get_merge_request перед повтором."
+	case opMRNote:
+		return "Проверьте list_merge_request_notes перед повтором."
+	}
+	return "Проверьте состояние (list_branches, list_commits) перед повтором."
+}
+
+// ruleMatches reports whether r words the failure e of write operation op.
+func ruleMatches(r writeRule, e *glclient.Error, op, detail string) bool {
+	if r.kind != e.Kind || (r.op != "" && r.op != op) || (r.status != 0 && r.status != e.Status) {
+		return false
+	}
+	if len(r.substrings) == 0 {
+		return true
+	}
+	for _, sub := range r.substrings {
+		if strings.Contains(detail, sub) {
+			return true
+		}
+	}
+	return false
+}
 
 // writeText words a failure of a state-changing request. It returns false when
 // the generic wording of baseText should be used instead.
 func writeText(e *glclient.Error, op, subject string) (string, bool) {
 	detail := strings.ToLower(e.Detail)
 	for _, r := range writeRules {
-		if r.kind != e.Kind || (r.op != "" && r.op != op) {
+		if !ruleMatches(r, e, op, detail) {
 			continue
 		}
-		for _, sub := range r.substrings {
-			if !strings.Contains(detail, sub) {
-				continue
-			}
-			text := r.text
-			if strings.Contains(text, "%s") {
-				text = fmt.Sprintf(text, capDetail(e.Detail))
-			}
-			return statusPrefix(e) + text, true
+		text := r.text
+		if strings.Contains(text, "%s") {
+			text = fmt.Sprintf(text, capDetail(e.Detail))
 		}
+		return statusPrefix(e) + text, true
 	}
 
 	switch e.Kind {
@@ -222,8 +261,12 @@ func writeText(e *glclient.Error, op, subject string) (string, bool) {
 			"Создайте свою ветку (create_branch), коммитьте в неё, затем откройте MR.", true
 	case glclient.KindUnauthorized:
 		return baseText(e, subject) + " Для записи нужен токен со scope `api`.", true
-	case glclient.KindServer, glclient.KindTimeout, glclient.KindNetwork:
-		return baseText(e, subject) + writeUnknownOutcome, true
+	case glclient.KindServer:
+		// Not baseText: "повторите позже" would invite a blind retry of a write.
+		return fmt.Sprintf("%d: ошибка сервера GitLab.", e.Status) + writeUnknownOutcome + unknownOutcomeHint(op), true
+	case glclient.KindTimeout, glclient.KindNetwork, glclient.KindCanceled,
+		glclient.KindDecode, glclient.KindTooLarge, glclient.KindOther:
+		return baseText(e, subject) + writeUnknownOutcome + unknownOutcomeHint(op), true
 	}
 	return "", false
 }

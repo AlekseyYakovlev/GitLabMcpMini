@@ -42,6 +42,9 @@ const createMergeRequestDescription = "Создаёт Merge Request из source_
 // checkBeforeMergeHint reminds the agent that a fresh MR has no merge verdict yet.
 const checkBeforeMergeHint = "статус слияния обычно ещё checking: перед merge_merge_request вызовите get_merge_request"
 
+// mrRefRe finds the "!N" merge request reference in a GitLab message.
+var mrRefRe = regexp.MustCompile(`!(\d+)`)
+
 // draftPrefix matches a title GitLab already treats as a draft.
 var draftPrefix = regexp.MustCompile(`(?i)^\s*(\[draft\]|\(draft\)|draft:)`)
 
@@ -316,7 +319,7 @@ func createMergeRequest(d Deps) func(ctx context.Context, in CreateMRIn) (string
 
 		mr, _, err := d.GL.MergeRequests.CreateMergeRequest(project, opts, gitlab.WithContext(ctx))
 		if err != nil {
-			return "", withWrite(opCreateMR, "проект или ветка", err)
+			return "", createMRError(ctx, d, project, source, err)
 		}
 
 		draft := "нет"
@@ -334,4 +337,35 @@ func createMergeRequest(d Deps) func(ctx context.Context, in CreateMRIn) (string
 		}
 		return strings.Join(lines, "\n"), nil
 	}
+}
+
+// createMRError words a failed create request. GitLab answers 409 when an open
+// merge request from the same branch exists; that is reported as an error that
+// names the existing MR, never as success. Every other failure goes through the
+// write wording, which flags an unknown outcome where the MR may exist.
+func createMRError(ctx context.Context, d Deps, project, source string, err error) error {
+	e := glclient.Classify(err)
+	if e == nil || e.Status != 409 || !strings.Contains(strings.ToLower(e.Detail), "another open merge request already exists") {
+		return withWrite(opCreateMR, "проект или ветка", err)
+	}
+
+	ref := "открытый MR из этой ветки уже есть (номер не удалось определить; см. list_merge_requests)"
+	if m := mrRefRe.FindStringSubmatch(e.Detail); m != nil {
+		ref = "открытый MR уже есть: !" + m[1]
+	} else {
+		// One read after the failed write finds the existing MR; the POST itself
+		// is never repeated.
+		mrs, _, lookupErr := d.GL.MergeRequests.ListProjectMergeRequests(project, &gitlab.ListProjectMergeRequestsOptions{
+			ListOptions:  gitlab.ListOptions{PerPage: 1},
+			State:        gitlab.Ptr("opened"),
+			SourceBranch: gitlab.Ptr(source),
+		}, gitlab.WithContext(ctx))
+		if lookupErr == nil && len(mrs) > 0 {
+			ref = fmt.Sprintf("открытый MR уже есть: !%d", mrs[0].IID)
+			if mrs[0].WebURL != "" {
+				ref += " (" + mrs[0].WebURL + ")"
+			}
+		}
+	}
+	return errors.New(ref + ". Используйте его (get_merge_request) или закройте.")
 }

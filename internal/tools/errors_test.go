@@ -126,6 +126,50 @@ func TestToToolText(t *testing.T) {
 		{name: "write 404 uses the subject",
 			err:      withWrite(opCreateBranch, "проект или ветка", &glclient.Error{Kind: glclient.KindNotFound, Status: 404}),
 			contains: []string{"404: не найдено (проект или ветка)"}},
+		{name: "create MR same branches",
+			err:    withWrite(opCreateMR, "проект или ветка", &glclient.Error{Kind: glclient.KindBadRequest, Status: 422, Detail: "[You must select different branches]"}),
+			prefix: "422: ветка-источник совпадает с целевой"},
+		{name: "create MR missing branch",
+			err:      withWrite(opCreateMR, "проект или ветка", &glclient.Error{Kind: glclient.KindBadRequest, Status: 422, Detail: "[Source branch \"x\" does not exist]"}),
+			prefix:   "422: ветка не найдена",
+			contains: []string{"Source branch \"x\" does not exist"}},
+		{name: "MR branch rules are keyed on the op",
+			err:   withWrite(opCommit, "проект или ветка", &glclient.Error{Kind: glclient.KindBadRequest, Status: 422, Detail: "[Source branch \"x\" does not exist]"}),
+			exact: "422: GitLab отклонил запрос: [Source branch \"x\" does not exist]"},
+		{name: "write canceled outcome unknown",
+			err:      withWrite(opCommit, "проект или ветка", &glclient.Error{Kind: glclient.KindCanceled}),
+			contains: []string{"Вызов отменён", "Результат записи неизвестен"}},
+		{name: "write decode outcome unknown",
+			err:      withWrite(opCommit, "проект или ветка", &glclient.Error{Kind: glclient.KindDecode}),
+			contains: []string{"Неожиданный ответ GitLab", "Результат записи неизвестен"}},
+		{name: "write too large outcome unknown",
+			err:      withWrite(opCommit, "проект или ветка", &glclient.Error{Kind: glclient.KindTooLarge}),
+			contains: []string{"слишком большой", "Результат записи неизвестен"}},
+		{name: "write other outcome unknown",
+			err:      withWrite(opCommit, "проект или ветка", &glclient.Error{Kind: glclient.KindOther, Detail: "boom"}),
+			contains: []string{"boom", "Результат записи неизвестен"}},
+		{name: "create MR 502 names where to check",
+			err:         withWrite(opCreateMR, "проект или ветка", &glclient.Error{Kind: glclient.KindServer, Status: 502}),
+			contains:    []string{"502: ошибка сервера GitLab", "Результат записи неизвестен", "list_merge_requests", "source_branch"},
+			notContains: []string{"повторите позже"}},
+		{name: "merge timeout points at get_merge_request",
+			err:         withWrite(opMergeMR, "MR (iid) или проект", &glclient.Error{Kind: glclient.KindTimeout}),
+			contains:    []string{"Результат записи неизвестен", "get_merge_request"},
+			notContains: []string{"list_branches"}},
+		{name: "update network points at get_merge_request",
+			err:      withWrite(opUpdateMR, "MR (iid) или проект", &glclient.Error{Kind: glclient.KindNetwork, Detail: "reset"}),
+			contains: []string{"Результат записи неизвестен", "get_merge_request"}},
+		{name: "note network points at list_merge_request_notes",
+			err:      withWrite(opMRNote, "MR (iid) или проект", &glclient.Error{Kind: glclient.KindNetwork, Detail: "reset"}),
+			contains: []string{"Результат записи неизвестен", "list_merge_request_notes"}},
+		{name: "commit 503 keeps the branch and commit hint",
+			err:         withWrite(opCommit, "проект или ветка", &glclient.Error{Kind: glclient.KindServer, Status: 503}),
+			contains:    []string{"503: ошибка сервера GitLab", "Результат записи неизвестен", "list_branches, list_commits"},
+			notContains: []string{"повторите позже"}},
+		{name: "write 429 has no outcome warning",
+			err:         withWrite(opCreateMR, "проект или ветка", &glclient.Error{Kind: glclient.KindRateLimited, Status: 429, RetryAfter: 5 * time.Second}),
+			contains:    []string{"429: превышен лимит запросов GitLab"},
+			notContains: []string{"Результат записи неизвестен"}},
 		{name: "read 503 has no outcome warning",
 			err:         withSubject("проект", &glclient.Error{Kind: glclient.KindServer, Status: 503}),
 			notContains: []string{"Результат записи неизвестен"}},
@@ -197,5 +241,25 @@ func TestSafeDeadlineBecomesReadableError(t *testing.T) {
 	}
 	if !strings.Contains(tc.Text, "Превышено время ожидания (25 с)") {
 		t.Errorf("text = %q", tc.Text)
+	}
+}
+
+func TestRuleMatchesStatusAndEmptySubstrings(t *testing.T) {
+	rule := writeRule{kind: glclient.KindBadRequest, op: opMergeMR, status: 405, text: "x"}
+	e405 := &glclient.Error{Kind: glclient.KindBadRequest, Status: 405, Detail: "anything"}
+	e406 := &glclient.Error{Kind: glclient.KindBadRequest, Status: 406, Detail: "anything"}
+
+	if !ruleMatches(rule, e405, opMergeMR, "anything") {
+		t.Error("a rule without substrings must match on kind, op and status")
+	}
+	if ruleMatches(rule, e406, opMergeMR, "anything") {
+		t.Error("a different status must not match")
+	}
+	if ruleMatches(rule, e405, opUpdateMR, "anything") {
+		t.Error("a different op must not match")
+	}
+	anyStatus := writeRule{kind: glclient.KindBadRequest, substrings: []string{"boom"}}
+	if !ruleMatches(anyStatus, e406, opCommit, "a boom here") || ruleMatches(anyStatus, e406, opCommit, "quiet") {
+		t.Error("status 0 matches any status; substrings still apply")
 	}
 }
