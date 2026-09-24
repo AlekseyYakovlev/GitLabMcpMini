@@ -241,3 +241,54 @@ func TestCreateOrUpdateFileGuardsSendNoRequest(t *testing.T) {
 		})
 	}
 }
+
+func TestCreateOrUpdateFileWriteFailures(t *testing.T) {
+	const existing = `{"file_name":"x","file_path":"docs/new.md","size":1,"encoding":"base64","content":"eA==","ref":"feature/x","blob_id":"b1","last_commit_id":"c1"}`
+	const missing = `{"message":"404 File Not Found"}`
+	cases := []struct {
+		name      string
+		getStatus int
+		getBody   string
+		status    int
+		body      string
+		contains  []string
+	}{
+		{"stale 400", 200, existing, 400, `{"message":"The file has changed since you started editing it: docs/new.md"}`,
+			[]string{"400: файл изменился", "прочитайте его заново"}},
+		{"stale 409", 200, existing, 409, `{"message":"The file has changed since you started editing it: docs/new.md"}`,
+			[]string{"409: файл изменился"}},
+		{"protected branch", 200, existing, 400, `{"message":"You are not allowed to push into this branch"}`,
+			[]string{"ветка защищена"}},
+		{"forbidden", 200, existing, 403, `{"message":"403 Forbidden"}`,
+			[]string{"403:", "scope `api`"}},
+		{"unauthorized", 200, existing, 401, `{"message":"401 Unauthorized"}`,
+			[]string{"scope `api`"}},
+		{"missing branch", 200, existing, 400, `{"message":"You can only create or edit files when you are on a branch"}`,
+			[]string{"ветка не найдена"}},
+		{"create race, file appeared", 404, missing, 400, `{"message":"A file with this name already exists"}`,
+			[]string{"файл уже существует"}},
+		{"unknown outcome", 200, existing, 503, `<html>unavailable</html>`,
+			[]string{"Результат записи неизвестен"}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			fake := testutil.NewFakeGitLab(t)
+			fake.JSON("GET", upsertFileRoute, tc.getStatus, tc.getBody, nil)
+			fake.JSON("POST", commitPostPath, tc.status, tc.body, nil)
+			cs := newTestSession(t, fake)
+
+			text, isErr := callText(t, cs, "create_or_update_file", upsertArgs("y"))
+			if !isErr {
+				t.Fatalf("want a tool error, got %q", text)
+			}
+			for _, want := range tc.contains {
+				if !strings.Contains(text, want) {
+					t.Errorf("text %q does not contain %q", text, want)
+				}
+			}
+			if n := len(requestsTo(fake, commitPostReq)); n != 1 {
+				t.Errorf("POST count = %d, want exactly 1 (a write is never retried)", n)
+			}
+		})
+	}
+}
