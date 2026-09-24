@@ -20,7 +20,7 @@ func whoami(d Deps) func(ctx context.Context, in whoamiIn) (string, error) {
 	return func(ctx context.Context, _ whoamiIn) (string, error) {
 		user, _, err := d.GL.Users.CurrentUser(gitlab.WithContext(ctx))
 		if err != nil {
-			return "", err
+			return "", withSubject("пользователь токена", err)
 		}
 
 		var sb strings.Builder

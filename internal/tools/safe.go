@@ -24,7 +24,7 @@ type Deps struct {
 
 // errorText turns a handler error into the text shown to the model.
 func errorText(err error) string {
-	return err.Error()
+	return toToolText(err)
 }
 
 // safe wraps a text-returning handler into an MCP tool handler. It recovers
@@ -51,7 +51,11 @@ func safe[T any](d Deps, h func(ctx context.Context, in T) (string, error)) mcp.
 
 		text, err := h(ctx, in)
 		if err != nil {
-			return textResult(d.redact(errorText(err)), true), nil, nil
+			msg := d.redact(errorText(err))
+			if d.Logger != nil {
+				d.Logger.Warn("tool call failed", "error", msg)
+			}
+			return textResult(msg, true), nil, nil
 		}
 		return textResult(d.redact(text), false), nil, nil
 	}
