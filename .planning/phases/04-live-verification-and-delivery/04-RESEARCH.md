@@ -366,22 +366,26 @@ Optional `GITLAB_URL` (default `https://gitlab.com`; only gitlab.com is supporte
 | A6 | The merge PUT response is `state=merged` synchronously (source: fetch-tool summary of `lib/api/merge_requests.rb`) | Pitfall 4 | Handled by the post-merge `get_merge_request` retry |
 | A7 | `GET /personal_access_tokens/self` works with a `read_api` token (whoami scopes line) | Pitfall 6 | The scopes line would read `scopes unavailable`; the read-only step then relies on cleanup tracking only |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Does the sandbox `main` really contain `README.md`, and what are its merge settings?**
    - What we know: the project exists and is private (unauthenticated GET returns 404); the author says `README.md` is in `main`.
    - What's unclear: cannot be verified without a token; merge method (merge commit vs fast-forward) changes the merge text (`merge commit:` vs `head sha (fast-forward):`).
    - Recommendation: `live.py` step 1 reads `README.md` from `main` and fails with a clear Russian message; accept any of the three merge-commit text forms.
+   - RESOLVED: handled by the live.py step 4 preflight (README.md read from the default branch with a clear message; all three merge-text forms accepted); sandbox configuration problems are an author action routed in 04-04 Task 3.
 
 2. **Should `create_or_update_file` reject empty `content` too?**
    - What we know: D-10 speaks about `commit_files`; the single-file tool has required `content` and today happily writes `""`.
    - Recommendation: reject in both (Code Example 1) so the documented "no empty files" limitation is true for every write path; costs one guard and one test.
+   - RESOLVED: adopted in Plan 01 (empty `content` rejected in both `commit_files` and `create_or_update_file`).
 
 3. **Is a second read-only-token proof of `create_or_update_file`/`commit_files` needed?**
    - Recommendation: no; `create_branch` with the read-only token satisfies criterion 2. Optionally add `create_or_update_file` (pre-read succeeds, POST 403) to show the read-then-write path, with a tracked branch name.
+   - RESOLVED: decided no; `create_branch` with the read-only token is the single read-only write proof (Plan 02 Task 3, session C).
 
 4. **Hermetic test for `live.py` itself?**
    - Recommendation: only cheap checks in `go test ./...` (e.g. `uv run scripts/live.py` without args exits 2 without network; `--help` works). Do not build a full fake for the scenario; the first real run is the test. `e2e` must never invoke `live.py` with a project (it would spawn network writes); existing e2e only runs `smoke.py` with explicit `--base-url` [VERIFIED: `e2e/python_smoke_test.go`].
+   - RESOLVED: adopted in Plan 02 (e2e/live_script_test.go: usage/exit code 2 without token and `--help` only; never runs live.py with a token).
 
 ## Environment Availability
 
