@@ -48,6 +48,8 @@ EXPECTED_TOOLS = {
     "create_or_update_file",
     "list_merge_requests",
     "get_merge_request",
+    "get_merge_request_diffs",
+    "list_merge_request_notes",
 }
 FAKE_SHA = "a1b2c3d4e5f6a7b8c9d0a1b2c3d4e5f6a7b8c9d0"
 FORBIDDEN_SCHEMA_KEYS = {"$ref", "$defs", "anyOf", "oneOf"}
@@ -181,6 +183,13 @@ async def run(exe: str, base_url: str | None, token: str, project: str, file_pat
                     "detailed_merge_status: mergeable" in one_mr,
                     f"get_merge_request result lacks the merge status: {one_mr}",
                 )
+                mr_diffs = await call("get_merge_request_diffs", {"project": project, "iid": 5})
+                check(
+                    "файлов на странице: 1" in mr_diffs,
+                    f"get_merge_request_diffs result lacks the file count: {mr_diffs}",
+                )
+                mr_notes = await call("list_merge_request_notes", {"project": project, "iid": 5})
+                check("[system]" in mr_notes, f"list_merge_request_notes result lacks a [system] note: {mr_notes}")
                 created = await call(
                     "create_branch",
                     {"project": project, "branch": "smoke/branch", "ref": "main"},

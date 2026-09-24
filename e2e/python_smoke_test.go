@@ -84,6 +84,11 @@ func TestPythonSmoke(t *testing.T) {
 	fake.JSON("GET", "/api/v4/projects/g%2Fp/merge_requests/5", 200,
 		`{"iid":5,"title":"Add x","state":"opened","draft":false,"source_branch":"f","target_branch":"main","author":{"username":"alice"},`+
 			`"detailed_merge_status":"mergeable","changes_count":"1","web_url":"https://gitlab.example/g/p/-/merge_requests/5"}`, nil)
+	fake.JSON("GET", "/api/v4/projects/g%2Fp/merge_requests/5/diffs", 200,
+		`[{"diff":"@@ -1 +1 @@\n-old\n+new\n","new_path":"a.txt","old_path":"a.txt","a_mode":"100644","b_mode":"100644"}]`, nil)
+	fake.JSON("GET", "/api/v4/projects/g%2Fp/merge_requests/5/notes", 200,
+		`[{"id":10,"system":true,"body":"added 1 commit","author":{"username":"alice"},"created_at":"2026-09-21T10:00:00Z"},`+
+			`{"id":11,"system":false,"body":"looks good","author":{"username":"bob"},"created_at":"2026-09-20T10:00:00Z"}]`, nil)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
