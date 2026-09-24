@@ -9,21 +9,21 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Server foundation
 
-- [ ] **FND-01**: Сервер работает как stdio MCP-сервер: проходит `initialize` и `tools/list` с клиентом `mcp` 1.30.x без обращений к сети при старте
-- [ ] **FND-02**: В stdout идёт только JSON-RPC, логи только в stderr; процесс завершается при закрытии stdin
-- [ ] **FND-03**: Токен берётся из `GITLAB_TOKEN`; при его отсутствии сервер сразу завершается с понятным сообщением в stderr; токен не попадает ни в вывод, ни в логи
-- [ ] **FND-04**: Проект можно указать числовым ID или путём `group/subgroup/project`
-- [ ] **FND-05**: Ошибки GitLab и сети (401/403/404/405/409/422/429/5xx) превращаются в результат `isError` с понятным сообщением; сервер не падает
-- [ ] **FND-06**: Списочные инструменты принимают `page`/`per_page` и сообщают, есть ли следующая страница; вывод ограничен ~15 000 символов с явной пометкой об обрезке
-- [ ] **FND-07**: Вызов укладывается в ~25 с; запросы записи (POST/PUT) никогда не повторяются автоматически
-- [ ] **FND-08**: Имена инструментов ≤30 символов, описания ≤900, схемы плоские (без `$ref`/`anyOf`/`null`)
+- [x] **FND-01**: Сервер работает как stdio MCP-сервер: проходит `initialize` и `tools/list` с клиентом `mcp` 1.30.x без обращений к сети при старте
+- [x] **FND-02**: В stdout идёт только JSON-RPC, логи только в stderr; процесс завершается при закрытии stdin
+- [x] **FND-03**: Токен берётся из `GITLAB_TOKEN`; при его отсутствии сервер сразу завершается с понятным сообщением в stderr; токен не попадает ни в вывод, ни в логи
+- [x] **FND-04**: Проект можно указать числовым ID или путём `group/subgroup/project`
+- [x] **FND-05**: Ошибки GitLab и сети (401/403/404/405/409/422/429/5xx) превращаются в результат `isError` с понятным сообщением; сервер не падает
+- [x] **FND-06**: Списочные инструменты принимают `page`/`per_page` и сообщают, есть ли следующая страница; вывод ограничен ~15 000 символов с явной пометкой об обрезке
+- [x] **FND-07**: Вызов укладывается в ~25 с; запросы записи (POST/PUT) никогда не повторяются автоматически
+- [x] **FND-08**: Имена инструментов ≤30 символов, описания ≤900, схемы плоские (без `$ref`/`anyOf`/`null`)
 
 ### Чтение кода
 
-- [ ] **READ-01**: `list_projects` — проекты пользователя (по умолчанию `membership=true`)
-- [ ] **READ-02**: `get_project` — данные проекта, включая ветку по умолчанию
-- [ ] **READ-03**: `list_repository_tree` — дерево файлов по пути и ref, с пагинацией
-- [ ] **READ-04**: `get_file_contents` — текст файла по ref (декодирование base64, диапазон строк, защита от больших и бинарных файлов)
+- [x] **READ-01**: `list_projects` — проекты пользователя (по умолчанию `membership=true`)
+- [x] **READ-02**: `get_project` — данные проекта, включая ветку по умолчанию
+- [x] **READ-03**: `list_repository_tree` — дерево файлов по пути и ref, с пагинацией
+- [x] **READ-04**: `get_file_contents` — текст файла по ref (декодирование base64, диапазон строк, защита от больших и бинарных файлов)
 - [ ] **READ-05**: `list_branches` — ветки проекта
 - [ ] **READ-06**: `list_commits` — коммиты по ref/пути
 - [ ] **READ-07**: `get_commit` — коммит вместе с diff
@@ -47,13 +47,13 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Вспомогательные
 
-- [ ] **UTIL-01**: `whoami` — текущий пользователь по токену (быстрая проверка токена и прав)
+- [x] **UTIL-01**: `whoami` — текущий пользователь по токену (быстрая проверка токена и прав)
 - [ ] **UTIL-02**: `compare_refs` — сравнение двух веток/коммитов
 
 ### Качество и поставка
 
-- [ ] **QA-01**: Автотесты: `httptest` с фейковым GitLab, in-memory MCP-сессия, e2e по stdio на реальном бинарнике, включая проверку чистоты stdout
-- [ ] **QA-02**: Smoke-скрипт на Python `mcp` 1.30.0 (`stdio_client` с `env`), повторяющий подключение агента
+- [x] **QA-01**: Автотесты: `httptest` с фейковым GitLab, in-memory MCP-сессия, e2e по stdio на реальном бинарнике, включая проверку чистоты stdout
+- [x] **QA-02**: Smoke-скрипт на Python `mcp` 1.30.0 (`stdio_client` с `env`), повторяющий подключение агента
 - [ ] **QA-03**: Живой прогон на тестовом проекте gitlab.com: чтение, ветка, коммит, MR, комментарий, merge, очистка
 - [ ] **QA-04**: Сборка в один `gitlab-mcp.exe` (Go) и README с фрагментом конфигурации для агента и требуемыми scope токена (`api` для записи)
 
@@ -99,21 +99,21 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FND-01 | Phase 1 | Pending |
-| FND-02 | Phase 1 | Pending |
-| FND-03 | Phase 1 | Pending |
-| FND-04 | Phase 1 | Pending |
-| FND-05 | Phase 1 | Pending |
-| FND-06 | Phase 1 | Pending |
-| FND-07 | Phase 1 | Pending |
-| FND-08 | Phase 1 | Pending |
-| UTIL-01 | Phase 1 | Pending |
-| READ-01 | Phase 1 | Pending |
-| READ-02 | Phase 1 | Pending |
-| READ-03 | Phase 1 | Pending |
-| READ-04 | Phase 1 | Pending |
-| QA-01 | Phase 1 | Pending |
-| QA-02 | Phase 1 | Pending |
+| FND-01 | Phase 1 | Complete |
+| FND-02 | Phase 1 | Complete |
+| FND-03 | Phase 1 | Complete |
+| FND-04 | Phase 1 | Complete |
+| FND-05 | Phase 1 | Complete |
+| FND-06 | Phase 1 | Complete |
+| FND-07 | Phase 1 | Complete |
+| FND-08 | Phase 1 | Complete |
+| UTIL-01 | Phase 1 | Complete |
+| READ-01 | Phase 1 | Complete |
+| READ-02 | Phase 1 | Complete |
+| READ-03 | Phase 1 | Complete |
+| READ-04 | Phase 1 | Complete |
+| QA-01 | Phase 1 | Complete |
+| QA-02 | Phase 1 | Complete |
 | READ-05 | Phase 2 | Pending |
 | READ-06 | Phase 2 | Pending |
 | READ-07 | Phase 2 | Pending |
