@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 
 	gitlab "gitlab.com/gitlab-org/api/client-go/v2"
@@ -27,6 +28,22 @@ const getMergeRequestDescription = "Один Merge Request GitLab-проекта
 	"Проверка слияния в GitLab асинхронная: сразу после создания MR статус checking или unchecked " +
 	"означает «проверка идёт», повторите вызов через несколько секунд. " +
 	"Вызывайте перед merge_merge_request. Diff показывает get_merge_request_diffs."
+
+const createMergeRequestDescription = "Создаёт Merge Request из source_branch в target_branch " +
+	"(по умолчанию — ветка по умолчанию проекта). " +
+	"draft=true помечает MR как Draft через префикс «Draft:» в заголовке. " +
+	"Вернётся ошибка, если из этой ветки уже есть открытый MR или между ветками нет различий " +
+	"(сначала закоммитьте изменения через commit_files). " +
+	"Строки описания, начинающиеся с «/», GitLab выполняет как quick actions. " +
+	"Сразу после создания статус слияния обычно checking: перед merge_merge_request вызовите get_merge_request. " +
+	"Запрос никогда не повторяется автоматически. " +
+	"Запись требует токен со scope api и роль Developer или выше."
+
+// checkBeforeMergeHint reminds the agent that a fresh MR has no merge verdict yet.
+const checkBeforeMergeHint = "статус слияния обычно ещё checking: перед merge_merge_request вызовите get_merge_request"
+
+// draftPrefix matches a title GitLab already treats as a draft.
+var draftPrefix = regexp.MustCompile(`(?i)^\s*(\[draft\]|\(draft\)|draft:)`)
 
 const (
 	// mrTitleRunes caps the MR title shown in a list line.
@@ -60,6 +77,16 @@ type ListMRsIn struct {
 type GetMRIn struct {
 	Project string `json:"project" jsonschema:"numeric project ID as a string (\"12345\") or full path group/subgroup/project"`
 	IID     int    `json:"iid" jsonschema:"merge request IID, the number after ! in GitLab"`
+}
+
+// CreateMRIn is the input of create_merge_request.
+type CreateMRIn struct {
+	Project      string `json:"project" jsonschema:"numeric project ID as a string (\"12345\") or full path group/subgroup/project"`
+	SourceBranch string `json:"source_branch" jsonschema:"branch with your changes"`
+	Title        string `json:"title" jsonschema:"merge request title"`
+	TargetBranch string `json:"target_branch,omitempty" jsonschema:"branch to merge into; default the project's default branch"`
+	Description  string `json:"description,omitempty" jsonschema:"merge request description in Markdown"`
+	Draft        bool   `json:"draft,omitempty" jsonschema:"true marks the MR as Draft (title prefix Draft:)"`
 }
 
 // checkIID rejects a merge request number that cannot exist, before any request.
@@ -223,4 +250,88 @@ func mrHeader(mr *gitlab.MergeRequest) []string {
 		lines = append(lines, mr.WebURL)
 	}
 	return lines
+}
+
+// withDraftPrefix marks title as a draft. GitLab REST has no draft field, so the
+// title prefix is the only way; a title that already carries one stays as is.
+func withDraftPrefix(title string) string {
+	if draftPrefix.MatchString(title) {
+		return title
+	}
+	return "Draft: " + title
+}
+
+// createMergeRequest returns the handler for the create_merge_request tool. The
+// POST is sent exactly once and never retried.
+func createMergeRequest(d Deps) func(ctx context.Context, in CreateMRIn) (string, error) {
+	return func(ctx context.Context, in CreateMRIn) (string, error) {
+		project, err := glclient.NormalizeProject(in.Project)
+		if err != nil {
+			return "", err
+		}
+		source := strings.TrimSpace(in.SourceBranch)
+		if source == "" {
+			return "", errors.New("не указана ветка-источник (source_branch)")
+		}
+		title := strings.TrimSpace(in.Title)
+		if title == "" {
+			return "", errors.New("не указан заголовок MR (title)")
+		}
+		errSameBranch := errors.New("ветка-источник совпадает с целевой: укажите другую target_branch")
+		explicitTarget := strings.TrimSpace(in.TargetBranch)
+		if explicitTarget != "" && explicitTarget == source {
+			return "", errSameBranch
+		}
+
+		target, isDefault, err := resolveRef(ctx, d, project, explicitTarget)
+		if err != nil {
+			return "", err
+		}
+		if target == source {
+			return "", errSameBranch
+		}
+
+		// GitLab creates an empty Draft MR for a branch without new commits, so
+		// the absence of a difference is checked before anything is written.
+		res, err := fetchCompare(ctx, d, project, target, source)
+		if err != nil {
+			return "", withSubject("ветка или проект", err)
+		}
+		if !res.CompareTimeout && len(res.Commits) == 0 {
+			return "", fmt.Errorf("нет изменений между ветками: в %s нет коммитов, которых нет в %s. "+
+				"Сначала закоммитьте изменения (commit_files), затем создайте MR.", source, target)
+		}
+
+		if in.Draft {
+			title = withDraftPrefix(title)
+		}
+		opts := &gitlab.CreateMergeRequestOptions{
+			SourceBranch: gitlab.Ptr(source),
+			TargetBranch: gitlab.Ptr(target),
+			Title:        gitlab.Ptr(title),
+		}
+		if desc := strings.TrimSpace(in.Description); desc != "" {
+			opts.Description = gitlab.Ptr(desc)
+		}
+
+		mr, _, err := d.GL.MergeRequests.CreateMergeRequest(project, opts, gitlab.WithContext(ctx))
+		if err != nil {
+			return "", withWrite(opCreateMR, "проект или ветка", err)
+		}
+
+		draft := "нет"
+		if mr.Draft {
+			draft = "да"
+		}
+		lines := []string{
+			fmt.Sprintf("MR !%d создан: %s→%s", mr.IID, source, refLabel(target, isDefault)),
+			"draft: " + draft,
+			statusAdvice(mr),
+			checkBeforeMergeHint,
+		}
+		if mr.WebURL != "" {
+			lines = append(lines, mr.WebURL)
+		}
+		return strings.Join(lines, "\n"), nil
+	}
 }

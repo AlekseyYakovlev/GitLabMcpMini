@@ -42,10 +42,14 @@ func withSubject(subject string, err error) error {
 const (
 	opCreateBranch = "create_branch"
 	opCommit       = "commit"
+	opCreateMR     = "create_merge_request"
+	opUpdateMR     = "update_merge_request"
+	opMergeMR      = "merge_merge_request"
+	opMRNote       = "create_merge_request_note"
 )
 
 // withWrite labels err as the failure of a state-changing request. op is the
-// operation key (opCreateBranch, opCommit) and subject names what could be
+// operation key (opCreateBranch, opCommit, opCreateMR, ...) and subject names what could be
 // missing for a 404. A nil err stays nil.
 func withWrite(op, subject string, err error) error {
 	if err == nil {

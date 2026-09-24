@@ -134,6 +134,50 @@
   },
   {
     "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "readOnlyHint": false
+    },
+    "description": "Создаёт Merge Request из source_branch в target_branch (по умолчанию — ветка по умолчанию проекта). draft=true помечает MR как Draft через префикс «Draft:» в заголовке. Вернётся ошибка, если из этой ветки уже есть открытый MR или между ветками нет различий (сначала закоммитьте изменения через commit_files). Строки описания, начинающиеся с «/», GitLab выполняет как quick actions. Сразу после создания статус слияния обычно checking: перед merge_merge_request вызовите get_merge_request. Запрос никогда не повторяется автоматически. Запись требует токен со scope api и роль Developer или выше.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "description": "merge request description in Markdown",
+          "type": "string"
+        },
+        "draft": {
+          "description": "true marks the MR as Draft (title prefix Draft:)",
+          "type": "boolean"
+        },
+        "project": {
+          "description": "numeric project ID as a string (\"12345\") or full path group/subgroup/project",
+          "type": "string"
+        },
+        "source_branch": {
+          "description": "branch with your changes",
+          "type": "string"
+        },
+        "target_branch": {
+          "description": "branch to merge into; default the project's default branch",
+          "type": "string"
+        },
+        "title": {
+          "description": "merge request title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "project",
+        "source_branch",
+        "title"
+      ],
+      "type": "object"
+    },
+    "name": "create_merge_request"
+  },
+  {
+    "annotations": {
       "destructiveHint": true,
       "idempotentHint": false,
       "readOnlyHint": false
