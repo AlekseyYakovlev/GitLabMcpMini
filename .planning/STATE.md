@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: planning
+status: executing
 stopped_at: Phase 3 context gathered
-last_updated: "2026-09-24T16:40:36.498Z"
-last_activity: 2026-09-24 -- Phase 03 planning complete
+last_updated: "2026-09-24T17:02:58.782Z"
+last_activity: 2026-09-24 -- Phase 03 execution started
 progress:
   total_phases: 9
   completed_phases: 2
   total_plans: 16
-  completed_plans: 11
+  completed_plans: 12
   percent: 22
 ---
 
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-24)
 
 **Core value:** Небольшой, понятный и работающий набор GitLab-инструментов, которые корректно отрабатывают на реальном gitlab.com через стандартный MCP-протокол (stdio: initialize → tools/list → tools/call).
-**Current focus:** Phase 3 — merge requests
+**Current focus:** Phase 03 — merge-requests
 
 ## Current Position
 
-Phase: 3
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-09-24 -- Phase 03 planning complete
+Phase: 03 (merge-requests) — EXECUTING
+Plan: 2 of 5
+Status: Executing Phase 03
+Last activity: 2026-09-24 -- Phase 03 execution started
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [████████░░] 75%
 
 ## Performance Metrics
 
@@ -52,6 +52,8 @@ Progress: [░░░░░░░░░░] 0%
 - Last 5 plans: -
 - Trend: -
 
+| Phase 03 P01 | 25min | 3 tasks | 9 files |
+
 ## Accumulated Context
 
 ### Decisions
@@ -61,6 +63,7 @@ Recent decisions affecting current work:
 
 - Roadmap: Vertical MVP, 4 фазы; общие помощники (stdio-харнесс, клиент GitLab, маппер ошибок, бюджет вывода) в Phase 1
 - Research: рекомендован Go + `modelcontextprotocol/go-sdk` v1.8.0, один `gitlab-mcp.exe` (проверено спайком против Python `mcp` 1.30.0)
+- [Phase 03]: Plan 01: list_merge_requests always sends state (default opened) because GitLab defaults to all; shared mergeStatusAdvice table in mr_status.go
 
 ### Pending Todos
 
@@ -75,6 +78,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-24T16:13:34.117Z
+Last session: 2026-09-24T17:02:53.683Z
 Stopped at: Phase 3 context gathered
 Resume file: .planning/phases/03-merge-requests/03-CONTEXT.md

@@ -113,7 +113,7 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 03-01-PLAN.md — MR read slice: list_merge_requests (state=opened by default) + get_merge_request with the shared detailed_merge_status table, 14-tool e2e/smoke
+- [x] 03-01-PLAN.md — MR read slice: list_merge_requests (state=opened by default) + get_merge_request with the shared detailed_merge_status table, 14-tool e2e/smoke
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -155,7 +155,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. Подключение и чтение проекта | 6/6 | Complete   | 2026-09-24 |
 | 2. История и запись в репозиторий | 5/5 | Complete   | 2026-09-24 |
-| 3. Merge Requests | 0/5 | Planned | - |
+| 3. Merge Requests | 1/5 | In Progress|  |
 | 4. Живая проверка и поставка | 0/TBD | Not started | - |
 
 ## Backlog

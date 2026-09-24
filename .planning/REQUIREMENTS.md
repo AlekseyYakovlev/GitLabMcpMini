@@ -30,8 +30,8 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Merge Requests
 
-- [ ] **MR-01**: `list_merge_requests` — список MR с фильтрами по состоянию и веткам
-- [ ] **MR-02**: `get_merge_request` — детали MR, включая `detailed_merge_status`
+- [x] **MR-01**: `list_merge_requests` — список MR с фильтрами по состоянию и веткам
+- [x] **MR-02**: `get_merge_request` — детали MR, включая `detailed_merge_status`
 - [ ] **MR-03**: `get_merge_request_diffs` — постраничный diff по файлам; флаги `collapsed`/`too_large`/`overflow` показываются явно
 - [ ] **MR-04**: `list_merge_request_notes` — комментарии MR (системные помечены)
 - [ ] **MR-05**: `create_merge_request` — создание MR из ветки
@@ -121,8 +121,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | WRT-01 | Phase 2 | Complete |
 | WRT-02 | Phase 2 | Complete |
 | WRT-03 | Phase 2 | Complete |
-| MR-01 | Phase 3 | Pending |
-| MR-02 | Phase 3 | Pending |
+| MR-01 | Phase 3 | Complete |
+| MR-02 | Phase 3 | Complete |
 | MR-03 | Phase 3 | Pending |
 | MR-04 | Phase 3 | Pending |
 | MR-05 | Phase 3 | Pending |
