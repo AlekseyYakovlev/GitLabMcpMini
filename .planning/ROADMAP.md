@@ -88,7 +88,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 02-04-PLAN.md — commit_files: explicit nested actions[] schema, guards, single POST, per-file +/-, golden tools/list, real-client proof
+- [x] 02-04-PLAN.md — commit_files: explicit nested actions[] schema, guards, single POST, per-file +/-, golden tools/list, real-client proof
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
@@ -132,6 +132,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Подключение и чтение проекта | 6/6 | Complete   | 2026-09-24 |
-| 2. История и запись в репозиторий | 3/5 | In Progress|  |
+| 2. История и запись в репозиторий | 4/5 | In Progress|  |
 | 3. Merge Requests | 0/TBD | Not started | - |
 | 4. Живая проверка и поставка | 0/TBD | Not started | - |
