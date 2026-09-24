@@ -79,8 +79,9 @@ type fileAction struct {
 	PreviousPath string
 	Content      string
 	LastCommitID string
-	// sendContent says whether Content goes into the request; an empty string
-	// is a legitimate content (an empty file) and must not be dropped.
+	// sendContent says whether Content goes into the request. create and
+	// update always send it (an empty content is rejected before that); for
+	// move an empty content means "keep the file content" and is not sent.
 	sendContent bool
 }
 
@@ -128,6 +129,9 @@ func toFileAction(i int, a ActionIn) (fileAction, error) {
 			return fileAction{}, fmt.Errorf("actions[%d]: для delete content не нужен", i)
 		}
 	case actCreate, actUpdate:
+		if a.Content == "" {
+			return fileAction{}, fmt.Errorf("actions[%d]: для %s нужен непустой content (пустой файл создать нельзя: передайте один перевод строки)", i, action)
+		}
 		fa.sendContent = true
 	case actMove:
 		fa.sendContent = a.Content != ""
@@ -223,6 +227,9 @@ func createOrUpdateFile(d Deps) func(ctx context.Context, in UpsertFileIn) (stri
 		}
 		if path == "" {
 			return "", errors.New("не указан путь к файлу")
+		}
+		if in.Content == "" {
+			return "", errors.New("нужен непустой content (пустой файл создать нельзя: передайте один перевод строки)")
 		}
 		branch := strings.TrimSpace(in.Branch)
 		fa := fileAction{Path: path, Content: in.Content, sendContent: true}
