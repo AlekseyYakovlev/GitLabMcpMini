@@ -345,3 +345,40 @@ func TestPerFileStats(t *testing.T) {
 		t.Error("absent path must be missing so the caller shows +?/−?")
 	}
 }
+
+func TestCommitFilesWriteFailures(t *testing.T) {
+	cases := []struct {
+		name     string
+		status   int
+		body     string
+		contains []string
+	}{
+		{"unknown outcome on 503", 503, `<html>unavailable</html>`, []string{"Результат записи неизвестен"}},
+		{"protected branch", 400, `{"message":"You are not allowed to push into this branch"}`, []string{"400: ветка защищена"}},
+		{"file exists", 400, `{"message":"A file with this name already exists"}`, []string{"400: файл уже существует"}},
+		{"not found", 404, `{"message":"404 Project Not Found"}`, []string{"проект или ветка"}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			fake := testutil.NewFakeGitLab(t)
+			fake.JSON("POST", commitPostPath, tc.status, tc.body, nil)
+			cs := newTestSession(t, fake)
+
+			text, isErr := callText(t, cs, "commit_files", commitArgs(actWith("create", "a.txt", "content", "x")))
+			if !isErr {
+				t.Fatalf("want a tool error, got %q", text)
+			}
+			for _, want := range tc.contains {
+				if !strings.Contains(text, want) {
+					t.Errorf("text %q does not contain %q", text, want)
+				}
+			}
+			if n := len(requestsTo(fake, commitPostReq)); n != 1 {
+				t.Errorf("POST count = %d, want exactly 1 (a write is never retried)", n)
+			}
+			if n := len(requestsTo(fake, "GET")); n != 0 {
+				t.Errorf("a failed commit must not trigger a diff read, got %v", fake.Requests())
+			}
+		})
+	}
+}
