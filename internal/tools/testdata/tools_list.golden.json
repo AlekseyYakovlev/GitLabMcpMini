@@ -414,6 +414,40 @@
       "idempotentHint": false,
       "readOnlyHint": true
     },
+    "description": "Заметки (обсуждение) Merge Request: iid — номер после ! в GitLab. Все заметки, новые первыми. Системные события GitLab (коммит добавлен, ветка обновлена, статус изменён) помечены [system] и занимают одну короткую строку. Заметка человека выводится как «#id @автор дата» и текст, текст длиннее 1000 символов обрезается. Для длинного обсуждения уменьшите per_page. Для следующей страницы вызовите снова с page из подсказки внизу.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "iid": {
+          "description": "merge request IID, the number after ! in GitLab",
+          "type": "integer"
+        },
+        "page": {
+          "description": "page number, default 1",
+          "type": "integer"
+        },
+        "per_page": {
+          "description": "notes per page, default 20, max 100",
+          "type": "integer"
+        },
+        "project": {
+          "description": "numeric project ID as a string (\"12345\") or full path group/subgroup/project",
+          "type": "string"
+        }
+      },
+      "required": [
+        "project",
+        "iid"
+      ],
+      "type": "object"
+    },
+    "name": "list_merge_request_notes"
+  },
+  {
+    "annotations": {
+      "idempotentHint": false,
+      "readOnlyHint": true
+    },
     "description": "Merge Request'ы GitLab-проекта: одна строка на MR «!iid, state, [draft], заголовок, ветка-источник→целевая ветка, @автор». Без фильтров показываются только открытые MR (state=opened). state: opened, closed, merged или all. Фильтры: source_branch и target_branch — точные имена веток; author_username — логин автора; search — текст в заголовке и описании. Детали одного MR, включая возможность слияния, показывает get_merge_request. Для следующей страницы вызовите снова с page из подсказки внизу.",
     "inputSchema": {
       "additionalProperties": false,
