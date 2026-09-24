@@ -5,7 +5,7 @@
       "idempotentHint": false,
       "readOnlyHint": false
     },
-    "description": "Один коммит с несколькими файлами в существующую ветку (создайте её через create_branch; в защищённую ветку не писать). Действия: create, update, delete, move (для move обязателен previous_path — старый путь). Только UTF-8 текст, до 50 файлов и до 1 МБ суммарно; content — полный новый текст файла. commit_files не проверяет конкурентные правки; для одного файла с проверкой используйте create_or_update_file. Запрос не повторяется автоматически. В ответе: SHA коммита (его можно передать в get_commit), +/- по файлам и ссылка. Нужен токен со scope api.",
+    "description": "Один коммит с несколькими файлами в существующую ветку (создайте её через create_branch; в защищённую ветку не писать). Действия: create, update, delete, move (для move обязателен previous_path — старый путь). Только UTF-8 текст, до 50 файлов и до 1 МБ суммарно; content — полный новый текст файла, для create и update обязателен и не может быть пустым (пустой файл создать нельзя: передайте один перевод строки). commit_files не проверяет конкурентные правки; для одного файла с проверкой используйте create_or_update_file. Запрос не повторяется автоматически. В ответе: SHA коммита (его можно передать в get_commit), +/- по файлам и ссылка. Нужен токен со scope api.",
     "inputSchema": {
       "additionalProperties": false,
       "properties": {
@@ -19,7 +19,7 @@
                 "type": "string"
               },
               "content": {
-                "description": "full new UTF-8 text content; required for create and update, optional for move",
+                "description": "full new UTF-8 text content; required and non-empty for create and update (empty files are not supported, pass one newline); optional for move",
                 "type": "string"
               },
               "file_path": {
@@ -214,7 +214,7 @@
       "idempotentHint": false,
       "readOnlyHint": false
     },
-    "description": "Создаёт или обновляет один текстовый файл одним коммитом в существующую ветку (создайте её через create_branch). Сам определяет, создать файл или обновить, и пишет об этом в ответе (created/updated). Защищает от перезаписи чужих правок: при обновлении передаётся last_commit_id, прочитанный с этой же ветки; при конфликте перечитайте файл и повторите. Содержимое пишется как есть; если в файле были CRLF, а в новом тексте их нет, будет предупреждение. Для нескольких файлов используйте commit_files. Запрос не повторяется автоматически. Нужен токен со scope api.",
+    "description": "Создаёт или обновляет один текстовый файл одним коммитом в существующую ветку (создайте её через create_branch). Сам определяет, создать файл или обновить, и пишет об этом в ответе (created/updated). Защищает от перезаписи чужих правок: при обновлении передаётся last_commit_id, прочитанный с этой же ветки; при конфликте перечитайте файл и повторите. Содержимое пишется как есть; если в файле были CRLF, а в новом тексте их нет, будет предупреждение. content не может быть пустым (пустой файл создать нельзя: передайте один перевод строки). Для нескольких файлов используйте commit_files. Запрос не повторяется автоматически. Нужен токен со scope api.",
     "inputSchema": {
       "additionalProperties": false,
       "properties": {
@@ -227,7 +227,7 @@
           "type": "string"
         },
         "content": {
-          "description": "full new UTF-8 text content of the file",
+          "description": "full new UTF-8 text content of the file; must not be empty (empty files are not supported, pass one newline)",
           "type": "string"
         },
         "path": {

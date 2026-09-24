@@ -137,33 +137,19 @@ func TestCommitFilesSendsOnePostWithAllActions(t *testing.T) {
 
 func ptrStr(s string) *string { return &s }
 
-func TestCommitFilesEmptyContentIsSent(t *testing.T) {
+func TestCommitFilesEmptyContentIsRejected(t *testing.T) {
 	fake := testutil.NewFakeGitLab(t)
-	fake.JSON("POST", commitPostPath, 201, newCommitJSON, nil)
-	fake.JSON("GET", newCommitDiff, 200, `[{"new_path":"empty.txt","old_path":"empty.txt","new_file":true,"diff":""}]`, nil)
 	cs := newTestSession(t, fake)
 
 	text, isErr := callText(t, cs, "commit_files", commitArgs(actWith("create", "empty.txt", "content", "")))
-	if isErr {
-		t.Fatalf("unexpected tool error: %s", text)
+	if !isErr {
+		t.Fatalf("want a tool error, got %q", text)
 	}
-	var body map[string]any
-	for _, r := range fake.Recorded() {
-		if r.Method == "POST" {
-			_ = json.Unmarshal([]byte(r.Body), &body)
-		}
+	if !strings.Contains(text, "непустой content") {
+		t.Errorf("error %q does not mention the non-empty content rule", text)
 	}
-	acts, _ := body["actions"].([]any)
-	m, _ := acts[0].(map[string]any)
-	if c, has := m["content"]; !has || c != "" {
-		t.Errorf("empty content must be sent as \"\": %v", m)
-	}
-	lines := strings.Split(text, "\n")
-	if !strings.HasSuffix(lines[0], ": 1 файл") {
-		t.Errorf("first line = %q", lines[0])
-	}
-	if lines[1] != "create empty.txt (+0/−0)" {
-		t.Errorf("file line = %q", lines[1])
+	if reqs := fake.Requests(); len(reqs) != 0 {
+		t.Errorf("empty content must not reach GitLab, got %v", reqs)
 	}
 }
 
@@ -253,6 +239,8 @@ func TestCommitFilesGuardsSendNoRequest(t *testing.T) {
 		{"NUL in content", commitArgs(actWith("create", "a.txt", "content", "a\u0000b")), "бинарн"},
 		{"delete with content", commitArgs(actWith("delete", "a.txt", "content", "x")), "delete"},
 		{"missing file_path", commitArgs(act("create", " ")), "file_path"},
+		{"create without content", commitArgs(act("create", "a.txt")), "непустой content"},
+		{"update with empty content", commitArgs(actWith("update", "a.txt", "content", "")), "непустой content"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

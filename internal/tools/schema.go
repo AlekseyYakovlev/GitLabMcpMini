@@ -43,7 +43,7 @@ func commitFilesSchema() map[string]any {
 						},
 						"content": map[string]any{
 							"type":        "string",
-							"description": "full new UTF-8 text content; required for create and update, optional for move",
+							"description": "full new UTF-8 text content; required and non-empty for create and update (empty files are not supported, pass one newline); optional for move",
 						},
 						"previous_path": map[string]any{
 							"type":        "string",

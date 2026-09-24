@@ -16,7 +16,7 @@ import (
 const commitFilesDescription = "Один коммит с несколькими файлами в существующую ветку " +
 	"(создайте её через create_branch; в защищённую ветку не писать). " +
 	"Действия: create, update, delete, move (для move обязателен previous_path — старый путь). " +
-	"Только UTF-8 текст, до 50 файлов и до 1 МБ суммарно; content — полный новый текст файла. " +
+	"Только UTF-8 текст, до 50 файлов и до 1 МБ суммарно; content — полный новый текст файла, для create и update обязателен и не может быть пустым (пустой файл создать нельзя: передайте один перевод строки). " +
 	"commit_files не проверяет конкурентные правки; для одного файла с проверкой " +
 	"используйте create_or_update_file. Запрос не повторяется автоматически. " +
 	"В ответе: SHA коммита (его можно передать в get_commit), +/- по файлам и ссылка. " +
@@ -27,6 +27,7 @@ const createOrUpdateFileDescription = "Создаёт или обновляет 
 	"в ответе (created/updated). Защищает от перезаписи чужих правок: при обновлении передаётся " +
 	"last_commit_id, прочитанный с этой же ветки; при конфликте перечитайте файл и повторите. " +
 	"Содержимое пишется как есть; если в файле были CRLF, а в новом тексте их нет, будет предупреждение. " +
+	"content не может быть пустым (пустой файл создать нельзя: передайте один перевод строки). " +
 	"Для нескольких файлов используйте commit_files. Запрос не повторяется автоматически. " +
 	"Нужен токен со scope api."
 
@@ -79,8 +80,9 @@ type fileAction struct {
 	PreviousPath string
 	Content      string
 	LastCommitID string
-	// sendContent says whether Content goes into the request; an empty string
-	// is a legitimate content (an empty file) and must not be dropped.
+	// sendContent says whether Content goes into the request. create and
+	// update always send it (an empty content is rejected before that); for
+	// move an empty content means "keep the file content" and is not sent.
 	sendContent bool
 }
 
@@ -128,6 +130,9 @@ func toFileAction(i int, a ActionIn) (fileAction, error) {
 			return fileAction{}, fmt.Errorf("actions[%d]: для delete content не нужен", i)
 		}
 	case actCreate, actUpdate:
+		if a.Content == "" {
+			return fileAction{}, fmt.Errorf("actions[%d]: для %s нужен непустой content (пустой файл создать нельзя: передайте один перевод строки)", i, action)
+		}
 		fa.sendContent = true
 	case actMove:
 		fa.sendContent = a.Content != ""
@@ -202,7 +207,7 @@ func commitCore(ctx context.Context, d Deps, project, branch, message string, ac
 type UpsertFileIn struct {
 	Project       string `json:"project" jsonschema:"numeric project ID as a string (\"12345\") or full path group/subgroup/project"`
 	Path          string `json:"path" jsonschema:"file path inside the repository"`
-	Content       string `json:"content" jsonschema:"full new UTF-8 text content of the file"`
+	Content       string `json:"content" jsonschema:"full new UTF-8 text content of the file; must not be empty (empty files are not supported, pass one newline)"`
 	Branch        string `json:"branch" jsonschema:"existing branch to commit to; create it first with create_branch"`
 	CommitMessage string `json:"commit_message" jsonschema:"commit message, not empty"`
 }
@@ -223,6 +228,9 @@ func createOrUpdateFile(d Deps) func(ctx context.Context, in UpsertFileIn) (stri
 		}
 		if path == "" {
 			return "", errors.New("не указан путь к файлу")
+		}
+		if in.Content == "" {
+			return "", errors.New("нужен непустой content (пустой файл создать нельзя: передайте один перевод строки)")
 		}
 		branch := strings.TrimSpace(in.Branch)
 		fa := fileAction{Path: path, Content: in.Content, sendContent: true}

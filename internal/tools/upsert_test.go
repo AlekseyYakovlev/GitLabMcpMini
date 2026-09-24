@@ -242,6 +242,22 @@ func TestCreateOrUpdateFileGuardsSendNoRequest(t *testing.T) {
 	}
 }
 
+func TestCreateOrUpdateFileEmptyContentSendsNoRequest(t *testing.T) {
+	fake := newUpsertFake(t, 404, `{"message":"404 File Not Found"}`)
+	cs := newTestSession(t, fake)
+
+	text, isErr := callText(t, cs, "create_or_update_file", upsertArgs(""))
+	if !isErr {
+		t.Fatalf("want a tool error, got %q", text)
+	}
+	if !strings.Contains(text, "непустой content") {
+		t.Errorf("error %q does not mention the non-empty content rule", text)
+	}
+	if reqs := fake.Requests(); len(reqs) != 0 {
+		t.Errorf("empty content must send neither GET nor POST, got %v", reqs)
+	}
+}
+
 func TestCreateOrUpdateFileWriteFailures(t *testing.T) {
 	const existing = `{"file_name":"x","file_path":"docs/new.md","size":1,"encoding":"base64","content":"eA==","ref":"feature/x","blob_id":"b1","last_commit_id":"c1"}`
 	const missing = `{"message":"404 File Not Found"}`
