@@ -2,6 +2,7 @@ package tools
 
 import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	gitlab "gitlab.com/gitlab-org/api/client-go/v2"
 )
 
 // Register adds every tool to the server.
@@ -35,4 +36,16 @@ func Register(s *mcp.Server, d Deps) {
 		Description: getFileContentsDescription,
 		Annotations: &mcp.ToolAnnotations{ReadOnlyHint: true},
 	}, safe(d, getFileContents(d)))
+
+	mcp.AddTool(s, &mcp.Tool{
+		Name:        "list_branches",
+		Description: listBranchesDescription,
+		Annotations: &mcp.ToolAnnotations{ReadOnlyHint: true},
+	}, safe(d, listBranches(d)))
+
+	mcp.AddTool(s, &mcp.Tool{
+		Name:        "create_branch",
+		Description: createBranchDescription,
+		Annotations: &mcp.ToolAnnotations{DestructiveHint: gitlab.Ptr(false)},
+	}, safe(d, createBranch(d)))
 }

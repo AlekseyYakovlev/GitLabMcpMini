@@ -19,6 +19,10 @@ const defaultNotFoundSubject = "проект, путь или ref"
 type subjectError struct {
 	subject string
 	err     error
+	// write marks an error from a state-changing request; op then names the
+	// write operation so wording rules can key on it instead of the subject.
+	write bool
+	op    string
 }
 
 func (e *subjectError) Error() string { return e.err.Error() }
@@ -31,6 +35,22 @@ func withSubject(subject string, err error) error {
 		return nil
 	}
 	return &subjectError{subject: subject, err: err}
+}
+
+// Write operation keys used by withWrite and by the write wording rules.
+const (
+	opCreateBranch = "create_branch"
+	opCommit       = "commit"
+)
+
+// withWrite labels err as the failure of a state-changing request. op is the
+// operation key (opCreateBranch, opCommit) and subject names what could be
+// missing for a 404. A nil err stays nil.
+func withWrite(op, subject string, err error) error {
+	if err == nil {
+		return nil
+	}
+	return &subjectError{subject: subject, err: err, write: true, op: op}
 }
 
 // toToolText turns any handler error into the short Russian message shown to

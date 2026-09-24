@@ -2,6 +2,8 @@
 package testutil
 
 import (
+	"bytes"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -20,6 +22,15 @@ type FakeGitLab struct {
 	mu       sync.Mutex
 	routes   map[string]http.HandlerFunc
 	requests []string
+	recorded []Recorded
+}
+
+// Recorded is one request as seen by the fake server, including its body.
+type Recorded struct {
+	Method string
+	// URI is the raw, still percent-encoded request URI with the query string.
+	URI  string
+	Body string
 }
 
 // NewFakeGitLab starts a fake GitLab server that is closed when the test ends.
@@ -46,8 +57,16 @@ func (f *FakeGitLab) serve(w http.ResponseWriter, r *http.Request) {
 		path = path[:i]
 	}
 
+	var body []byte
+	if r.Body != nil {
+		body, _ = io.ReadAll(r.Body)
+		_ = r.Body.Close()
+		r.Body = io.NopCloser(bytes.NewReader(body))
+	}
+
 	f.mu.Lock()
 	f.requests = append(f.requests, r.Method+" "+r.RequestURI)
+	f.recorded = append(f.recorded, Recorded{Method: r.Method, URI: r.RequestURI, Body: string(body)})
 	h := f.routes[routeKey(r.Method, path)]
 	f.mu.Unlock()
 
@@ -92,9 +111,20 @@ func (f *FakeGitLab) Requests() []string {
 	return out
 }
 
+// Recorded returns every request with its method, raw request URI and body, in
+// arrival order.
+func (f *FakeGitLab) Recorded() []Recorded {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	out := make([]Recorded, len(f.recorded))
+	copy(out, f.recorded)
+	return out
+}
+
 // Reset forgets all recorded requests. Registered routes are kept.
 func (f *FakeGitLab) Reset() {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.requests = nil
+	f.recorded = nil
 }
