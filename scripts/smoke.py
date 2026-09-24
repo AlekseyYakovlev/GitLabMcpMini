@@ -14,7 +14,8 @@ Two modes:
     live      no --base-url: read-only calls against gitlab.com with the real
               GITLAB_TOKEN; --project is required and the first list_projects
               page is printed so default_branch can be checked by eye. Write
-              tools (create_branch) are called only in hermetic mode.
+              tools (create_branch) and get_commit (needs a known SHA) are
+              called only in hermetic mode.
 
 Usage:
     uv run scripts/smoke.py [--exe PATH] [--base-url URL] [--project P] [--file F]
@@ -40,7 +41,10 @@ EXPECTED_TOOLS = {
     "get_file_contents",
     "list_branches",
     "create_branch",
+    "list_commits",
+    "get_commit",
 }
+FAKE_SHA = "a1b2c3d4e5f6a7b8c9d0a1b2c3d4e5f6a7b8c9d0"
 FORBIDDEN_SCHEMA_KEYS = {"$ref", "$defs", "anyOf", "oneOf"}
 
 
@@ -144,7 +148,10 @@ async def run(exe: str, base_url: str | None, token: str, project: str, file_pat
                 {"project": project, "path": file_path, "end_line": 20},
             )
             await call("list_branches", {"project": project, "per_page": 5})
+            await call("list_commits", {"project": project, "per_page": 3})
             if base_url:
+                opened = await call("get_commit", {"project": project, "sha": FAKE_SHA})
+                check("файлов на странице" in opened, f"get_commit result lacks the file count: {opened}")
                 created = await call(
                     "create_branch",
                     {"project": project, "branch": "smoke/branch", "ref": "main"},
