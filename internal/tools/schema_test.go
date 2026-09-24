@@ -3,7 +3,10 @@ package tools
 import (
 	"context"
 	"encoding/json"
+	"flag"
 	"fmt"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"testing"
@@ -107,5 +110,47 @@ func walkSchema(t *testing.T, path string, v any) {
 		for i, child := range x {
 			walkSchema(t, fmt.Sprintf("%s[%d]", path, i), child)
 		}
+	}
+}
+
+// updateGolden rewrites the golden files under testdata instead of comparing.
+var updateGolden = flag.Bool("update", false, "rewrite testdata golden files")
+
+const toolsListGolden = "testdata/tools_list.golden.json"
+
+// TestToolsListGolden pins the exact tools/list answer, so any change to a tool
+// name, description or input schema is a visible diff.
+func TestToolsListGolden(t *testing.T) {
+	cs := newTestSession(t, testutil.NewFakeGitLab(t))
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	list, err := cs.ListTools(ctx, nil)
+	if err != nil {
+		t.Fatalf("ListTools: %v", err)
+	}
+	got, err := json.MarshalIndent(list.Tools, "", "  ")
+	if err != nil {
+		t.Fatalf("marshal tools: %v", err)
+	}
+	got = append(got, '\n')
+
+	if *updateGolden {
+		if err := os.MkdirAll(filepath.Dir(toolsListGolden), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(toolsListGolden, got, 0o644); err != nil {
+			t.Fatal(err)
+		}
+		return
+	}
+
+	want, err := os.ReadFile(toolsListGolden)
+	if err != nil {
+		t.Fatalf("read golden: %v (run `go test ./internal/tools -run TestToolsListGolden -update`)", err)
+	}
+	norm := func(b []byte) string { return strings.ReplaceAll(string(b), "\r\n", "\n") }
+	if norm(got) != norm(want) {
+		t.Errorf("tools/list differs from %s; if the change is intended run `go test ./internal/tools -run TestToolsListGolden -update`\n--- got ---\n%s", toolsListGolden, got)
 	}
 }
