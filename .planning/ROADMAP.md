@@ -30,7 +30,15 @@
   3. Пользователь может вызвать `list_projects`, `get_project`, `list_repository_tree` и `get_file_contents`, указав проект числовым ID или путём `group/subgroup/project`; списки показывают `page`/`per_page` и признак следующей страницы; большой или бинарный файл и слишком длинный вывод дают явную пометку об обрезке, а не молчаливую потерю
   4. Ошибки 401/403/404/429/5xx и сетевые сбои приходят как результат `isError` с понятным сообщением, сервер не падает; вызов укладывается в ~25 с; имена инструментов ≤30 символов, описания ≤900, схемы плоские
   5. Автотесты (`httptest` с фейковым GitLab, in-memory MCP-сессия, e2e по stdio на реальном бинарнике) проходят и проверяют wire-путь кодирования проекта и путей файлов; харнесс готов для расширения в следующих фазах
-**Plans**: TBD
+**Plans**: 6 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Walking skeleton: module, config fail-fast, redacting logger, stdout guard, whoami via client-go, e2e on real binary + Python smoke
+- [ ] 01-02-PLAN.md — Client hardening: GET-only retries with Retry-After, no write retries, timeouts, body cap, error classification/wording, project/path normalisers with wire tests
+- [ ] 01-03-PLAN.md — Test harness: in-memory session helper, schema guard (FND-08), panic/redaction tests, raw stdout purity + EOF test
+- [ ] 01-04-PLAN.md — Output budget/pagination footer + list_projects and get_project
+- [ ] 01-05-PLAN.md — Default-branch resolution + list_repository_tree
+- [ ] 01-06-PLAN.md — get_file_contents (base64, ranges, truncation, binary/oversize) + real-binary wire e2e + five-tool Python smoke
 
 ### Phase 2: История и запись в репозиторий
 **Goal**: Агент изучает ветки, коммиты и различия и вносит изменения в репозиторий: создаёт ветку и коммитит один или несколько файлов
@@ -75,7 +83,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Подключение и чтение проекта | 0/TBD | Not started | - |
+| 1. Подключение и чтение проекта | 0/6 | Not started | - |
 | 2. История и запись в репозиторий | 0/TBD | Not started | - |
 | 3. Merge Requests | 0/TBD | Not started | - |
 | 4. Живая проверка и поставка | 0/TBD | Not started | - |
