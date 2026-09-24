@@ -13,7 +13,8 @@ Two modes:
     hermetic  --base-url points at a fake GitLab (used by the Go e2e tests).
     live      no --base-url: read-only calls against gitlab.com with the real
               GITLAB_TOKEN; --project is required and the first list_projects
-              page is printed so default_branch can be checked by eye.
+              page is printed so default_branch can be checked by eye. Write
+              tools (create_branch) are called only in hermetic mode.
 
 Usage:
     uv run scripts/smoke.py [--exe PATH] [--base-url URL] [--project P] [--file F]
@@ -37,6 +38,8 @@ EXPECTED_TOOLS = {
     "get_project",
     "list_repository_tree",
     "get_file_contents",
+    "list_branches",
+    "create_branch",
 }
 FORBIDDEN_SCHEMA_KEYS = {"$ref", "$defs", "anyOf", "oneOf"}
 
@@ -140,6 +143,13 @@ async def run(exe: str, base_url: str | None, token: str, project: str, file_pat
                 "get_file_contents",
                 {"project": project, "path": file_path, "end_line": 20},
             )
+            await call("list_branches", {"project": project, "per_page": 5})
+            if base_url:
+                created = await call(
+                    "create_branch",
+                    {"project": project, "branch": "smoke/branch", "ref": "main"},
+                )
+                check("smoke/branch" in created, f"create_branch result lacks the branch name: {created}")
             missing = await call(
                 "get_project",
                 {"project": "no-such-group-xyz/no-such-project"},
