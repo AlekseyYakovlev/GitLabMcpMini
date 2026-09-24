@@ -80,7 +80,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 02-02-PLAN.md — History slice: list_commits + get_commit with budgeted diff rendering (explicit too_large/collapsed reasons)
+- [x] 02-02-PLAN.md — History slice: list_commits + get_commit with budgeted diff rendering (explicit too_large/collapsed reasons)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -132,6 +132,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Подключение и чтение проекта | 6/6 | Complete   | 2026-09-24 |
-| 2. История и запись в репозиторий | 1/5 | In Progress|  |
+| 2. История и запись в репозиторий | 2/5 | In Progress|  |
 | 3. Merge Requests | 0/TBD | Not started | - |
 | 4. Живая проверка и поставка | 0/TBD | Not started | - |
