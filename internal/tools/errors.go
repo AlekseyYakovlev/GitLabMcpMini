@@ -135,6 +135,12 @@ type writeRule struct {
 }
 
 // writeRules are consulted in order before the kind-level write wording.
+//
+// Rules keyed on an op only fire for that operation. The branch-exists rule
+// is keyed on opCreateBranch, so a commit failure that says "already exists"
+// about a file reaches the file rule below instead of being read as a branch
+// clash. Rules without an op apply to every write and are matched by their
+// specific phrases only.
 var writeRules = []writeRule{
 	{
 		kind:       glclient.KindBadRequest,
@@ -152,6 +158,26 @@ var writeRules = []writeRule{
 		kind:       glclient.KindBadRequest,
 		substrings: []string{"invalid reference name", "ref is missing"},
 		text:       "исходный ref не найден: укажите существующую ветку, тег или SHA. %s",
+	},
+	{
+		kind:       glclient.KindBadRequest,
+		substrings: []string{"not allowed to push"},
+		text:       "ветка защищена: создайте ветку (create_branch), коммитьте туда, затем MR.",
+	},
+	{
+		kind:       glclient.KindBadRequest,
+		substrings: []string{"you can only create or edit files when you are on a branch"},
+		text:       "ветка не найдена: создайте её через create_branch.",
+	},
+	{
+		kind:       glclient.KindBadRequest,
+		substrings: []string{"a file with this name already exists"},
+		text:       "файл уже существует на ветке (для commit_files используйте action=update).",
+	},
+	{
+		kind:       glclient.KindBadRequest,
+		substrings: []string{"a file with this name doesn't exist", "a file with this name does not exist"},
+		text:       "файла нет на ветке (для commit_files используйте action=create или проверьте путь).",
 	},
 }
 

@@ -66,4 +66,11 @@ func Register(s *mcp.Server, d Deps) {
 		Description: createBranchDescription,
 		Annotations: &mcp.ToolAnnotations{DestructiveHint: gitlab.Ptr(false)},
 	}, safe(d, createBranch(d)))
+
+	mcp.AddTool(s, &mcp.Tool{
+		Name:        "commit_files",
+		Description: commitFilesDescription,
+		InputSchema: commitFilesSchema(),
+		Annotations: &mcp.ToolAnnotations{DestructiveHint: gitlab.Ptr(true)},
+	}, safe(d, commitFiles(d)))
 }

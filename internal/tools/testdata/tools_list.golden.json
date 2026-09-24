@@ -1,0 +1,393 @@
+[
+  {
+    "annotations": {
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "readOnlyHint": false
+    },
+    "description": "Один коммит с несколькими файлами в существующую ветку (создайте её через create_branch; в защищённую ветку не писать). Действия: create, update, delete, move (для move обязателен previous_path — старый путь). Только UTF-8 текст, до 50 файлов и до 1 МБ суммарно; content — полный новый текст файла. commit_files не проверяет конкурентные правки; для одного файла с проверкой используйте create_or_update_file. Запрос не повторяется автоматически. В ответе: SHA коммита (его можно передать в get_commit), +/- по файлам и ссылка. Нужен токен со scope api.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "actions": {
+          "description": "file changes of one commit, 1..50 items",
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "action": {
+                "description": "create, update, delete or move",
+                "type": "string"
+              },
+              "content": {
+                "description": "full new UTF-8 text content; required for create and update, optional for move",
+                "type": "string"
+              },
+              "file_path": {
+                "description": "path of the file in the repository",
+                "type": "string"
+              },
+              "previous_path": {
+                "description": "old path, only for move",
+                "type": "string"
+              }
+            },
+            "required": [
+              "action",
+              "file_path"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "branch": {
+          "description": "existing branch to commit to, for example feature/x (create it with create_branch)",
+          "type": "string"
+        },
+        "commit_message": {
+          "description": "commit message",
+          "type": "string"
+        },
+        "project": {
+          "description": "numeric project ID as a string (\"12345\") or full path group/subgroup/project",
+          "type": "string"
+        }
+      },
+      "required": [
+        "project",
+        "branch",
+        "commit_message",
+        "actions"
+      ],
+      "type": "object"
+    },
+    "name": "commit_files"
+  },
+  {
+    "annotations": {
+      "idempotentHint": false,
+      "readOnlyHint": true
+    },
+    "description": "Сравнение двух веток, тегов или коммитов GitLab-проекта: from — база, to — то, что с ней сравнивается; как в GitLab, сравнение идёт от общего предка (merge-base). Вывод: коммиты (до 20 строк) и diff по файлам, то есть что принесёт ветка to относительно from — удобно проверить перед Merge Request. page и per_page листают файлы; patch каждого файла ограничен 2000 символами, весь вывод — 15000. Если GitLab прервал сравнение по таймауту, об этом сказано явно.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "from": {
+          "description": "base branch, tag or commit SHA",
+          "type": "string"
+        },
+        "page": {
+          "description": "page of the file list, default 1",
+          "type": "integer"
+        },
+        "per_page": {
+          "description": "files per page, default 20, max 100",
+          "type": "integer"
+        },
+        "project": {
+          "description": "numeric project ID as a string (\"12345\") or full path group/subgroup/project",
+          "type": "string"
+        },
+        "to": {
+          "description": "branch, tag or commit SHA to compare with the base",
+          "type": "string"
+        }
+      },
+      "required": [
+        "project",
+        "from",
+        "to"
+      ],
+      "type": "object"
+    },
+    "name": "compare_refs"
+  },
+  {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "readOnlyHint": false
+    },
+    "description": "Создаёт новую ветку в GitLab-проекте от ref (коммит SHA, ветка или тег; по умолчанию — ветка по умолчанию проекта). Если ветка с таким именем уже есть, вернётся ошибка и ничего не изменится. В ответе: имя ветки, от чего создана, SHA конца ветки и ссылка. Запись требует токен со scope api и роль Developer или выше. Дальше коммитьте в созданную ветку и открывайте Merge Request.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "branch": {
+          "description": "name of the new branch, for example feature/x",
+          "type": "string"
+        },
+        "project": {
+          "description": "numeric project ID as a string (\"12345\") or full path group/subgroup/project",
+          "type": "string"
+        },
+        "ref": {
+          "description": "branch, tag or commit SHA to branch from; default the project's default branch",
+          "type": "string"
+        }
+      },
+      "required": [
+        "project",
+        "branch"
+      ],
+      "type": "object"
+    },
+    "name": "create_branch"
+  },
+  {
+    "annotations": {
+      "idempotentHint": false,
+      "readOnlyHint": true
+    },
+    "description": "Один коммит GitLab-проекта по SHA, ветке или тегу: шапка (полный SHA, автор, дата, родители, число добавленных и удалённых строк, сообщение, ссылка) и diff по файлам. Patch каждого файла ограничен 2000 символами, весь вывод — 15000. Если patch у файла не показан, рядом указана причина (too_large, collapsed, только переименование, только смена режима, пустой или бинарный файл) и как прочитать содержимое через get_file_contents. page и per_page листают файлы diff.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "page": {
+          "description": "page of the file list of the diff, default 1",
+          "type": "integer"
+        },
+        "per_page": {
+          "description": "files per page, default 20, max 100",
+          "type": "integer"
+        },
+        "project": {
+          "description": "numeric project ID as a string (\"12345\") or full path group/subgroup/project",
+          "type": "string"
+        },
+        "sha": {
+          "description": "commit SHA, branch or tag name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "project",
+        "sha"
+      ],
+      "type": "object"
+    },
+    "name": "get_commit"
+  },
+  {
+    "annotations": {
+      "idempotentHint": false,
+      "readOnlyHint": true
+    },
+    "description": "Содержимое текстового файла из репозитория GitLab-проекта. Без ref читается ветка по умолчанию. Для больших файлов используйте start_line и end_line (нумерация с 1, обе границы включительно) — так можно читать файл по частям. Без диапазона выводится не больше 15000 символов; при обрезке в конце указано, какие строки показаны и как запросить остальное. Заголовок содержит путь, ref, диапазон строк, общее число строк и размер. Бинарные файлы (изображения, архивы и т. п.) не выводятся: вместо содержимого возвращается пометка с размером и blob_id.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "end_line": {
+          "description": "last line to return, inclusive",
+          "type": "integer"
+        },
+        "path": {
+          "description": "file path inside the repository, for example src/main.go",
+          "type": "string"
+        },
+        "project": {
+          "description": "numeric project ID as a string (\"12345\") or full path group/subgroup/project",
+          "type": "string"
+        },
+        "ref": {
+          "description": "branch, tag or commit SHA; default the project's default branch",
+          "type": "string"
+        },
+        "start_line": {
+          "description": "first line to return, 1-based; use for big files",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "project",
+        "path"
+      ],
+      "type": "object"
+    },
+    "name": "get_file_contents"
+  },
+  {
+    "annotations": {
+      "idempotentHint": false,
+      "readOnlyHint": true
+    },
+    "description": "Ключевые поля одного проекта GitLab: id, путь, ветка по умолчанию, видимость, архивный ли, дата последней активности, ссылка и описание. Проект задаётся числовым ID или путём group/subgroup/project.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "project": {
+          "description": "numeric project ID as a string (\"12345\") or full path group/subgroup/project",
+          "type": "string"
+        }
+      },
+      "required": [
+        "project"
+      ],
+      "type": "object"
+    },
+    "name": "get_project"
+  },
+  {
+    "annotations": {
+      "idempotentHint": false,
+      "readOnlyHint": true
+    },
+    "description": "Ветки GitLab-проекта: одна строка на ветку в виде «имя короткий-SHA [маркеры] заголовок последнего коммита». Маркеры: [default] — ветка по умолчанию; [protected] — ветка может быть защищена, писать в неё напрямую нельзя, коммитьте в свою ветку, созданную create_branch; [merged] — ветка уже влита. С search показываются только ветки, в имени которых есть эта подстрока. Для следующей страницы вызовите снова с page из подсказки внизу.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "page": {
+          "description": "page number, default 1",
+          "type": "integer"
+        },
+        "per_page": {
+          "description": "items per page, default 20, max 100",
+          "type": "integer"
+        },
+        "project": {
+          "description": "numeric project ID as a string (\"12345\") or full path group/subgroup/project",
+          "type": "string"
+        },
+        "search": {
+          "description": "substring of the branch name to filter by",
+          "type": "string"
+        }
+      },
+      "required": [
+        "project"
+      ],
+      "type": "object"
+    },
+    "name": "list_branches"
+  },
+  {
+    "annotations": {
+      "idempotentHint": false,
+      "readOnlyHint": true
+    },
+    "description": "История коммитов GitLab-проекта: одна строка на коммит «короткий SHA, дата, автор, заголовок». По умолчанию берётся ветка по умолчанию проекта; ref задаёт другую ветку, тег или коммит. Фильтры: path — только коммиты, затрагивающие файл или каталог; since и until — границы дат в ISO 8601, например 2026-09-01 или 2026-09-01T12:00:00Z; author — часть имени или email автора. Полный SHA и diff коммита показывает get_commit. Для следующей страницы вызовите снова с page из подсказки внизу.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "author": {
+          "description": "author name or email substring",
+          "type": "string"
+        },
+        "page": {
+          "description": "page number, default 1",
+          "type": "integer"
+        },
+        "path": {
+          "description": "only commits touching this file or directory",
+          "type": "string"
+        },
+        "per_page": {
+          "description": "items per page, default 20, max 100",
+          "type": "integer"
+        },
+        "project": {
+          "description": "numeric project ID as a string (\"12345\") or full path group/subgroup/project",
+          "type": "string"
+        },
+        "ref": {
+          "description": "branch, tag or commit SHA; default the project's default branch",
+          "type": "string"
+        },
+        "since": {
+          "description": "ISO 8601 date or date-time, for example 2026-09-01 or 2026-09-01T12:00:00Z",
+          "type": "string"
+        },
+        "until": {
+          "description": "ISO 8601 date or date-time, for example 2026-09-01 or 2026-09-01T12:00:00Z",
+          "type": "string"
+        }
+      },
+      "required": [
+        "project"
+      ],
+      "type": "object"
+    },
+    "name": "list_commits"
+  },
+  {
+    "annotations": {
+      "idempotentHint": false,
+      "readOnlyHint": true
+    },
+    "description": "Список проектов GitLab, доступных по токену (по умолчанию только те, где вы участник). Одна строка на проект: id, путь, ветка по умолчанию, описание. Для следующей страницы вызовите снова с page из подсказки внизу.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "include_public": {
+          "description": "also include public projects you are not a member of; default false = only your projects",
+          "type": "boolean"
+        },
+        "page": {
+          "description": "page number, default 1",
+          "type": "integer"
+        },
+        "per_page": {
+          "description": "items per page, default 20, max 100",
+          "type": "integer"
+        },
+        "search": {
+          "description": "filter by name or path substring",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "name": "list_projects"
+  },
+  {
+    "annotations": {
+      "idempotentHint": false,
+      "readOnlyHint": true
+    },
+    "description": "Дерево файлов репозитория GitLab-проекта: одна строка на элемент. Каталоги помечены «dir», файлы «file», подмодули «sub». По умолчанию показывается корень репозитория на ветке по умолчанию; чтобы заглянуть глубже, укажите path (каталог внутри репозитория), а чтобы выбрать другую ветку, тег или коммит — ref. С recursive=true выводятся все вложенные элементы с полными путями. Вывод ограничен 15000 символами. Для следующей страницы вызовите снова с page из подсказки внизу.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "page": {
+          "description": "page number, default 1",
+          "type": "integer"
+        },
+        "path": {
+          "description": "directory inside the repository, default repository root",
+          "type": "string"
+        },
+        "per_page": {
+          "description": "items per page, default 20, max 100",
+          "type": "integer"
+        },
+        "project": {
+          "description": "numeric project ID as a string (\"12345\") or full path group/subgroup/project",
+          "type": "string"
+        },
+        "recursive": {
+          "description": "list all nested entries; output is capped at 15000 characters",
+          "type": "boolean"
+        },
+        "ref": {
+          "description": "branch, tag or commit SHA; default the project's default branch",
+          "type": "string"
+        }
+      },
+      "required": [
+        "project"
+      ],
+      "type": "object"
+    },
+    "name": "list_repository_tree"
+  },
+  {
+    "annotations": {
+      "idempotentHint": false,
+      "readOnlyHint": true
+    },
+    "description": "Показывает текущего пользователя GitLab по токену и scopes токена. Используйте для быстрой проверки токена и прав.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "name": "whoami"
+  }
+]
