@@ -4,13 +4,13 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Phase 3 context gathered
-last_updated: "2026-09-24T17:12:44.540Z"
+last_updated: "2026-09-24T17:17:32.724Z"
 last_activity: 2026-09-24 -- Phase 03 execution started
 progress:
   total_phases: 9
   completed_phases: 2
   total_plans: 16
-  completed_plans: 14
+  completed_plans: 15
   percent: 22
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-24)
 ## Current Position
 
 Phase: 03 (merge-requests) — EXECUTING
-Plan: 4 of 5
+Plan: 5 of 5
 Status: Executing Phase 03
 Last activity: 2026-09-24 -- Phase 03 execution started
 
-Progress: [█████████░] 88%
+Progress: [█████████░] 94%
 
 ## Performance Metrics
 
@@ -55,6 +55,7 @@ Progress: [█████████░] 88%
 | Phase 03 P01 | 25min | 3 tasks | 9 files |
 | Phase 03 P02 | 20min | 3 tasks | 9 files |
 | Phase 03 P03 | 25min | 3 tasks | 10 files |
+| Phase 03 P04 | 25min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -69,6 +70,7 @@ Recent decisions affecting current work:
 - [Phase 03-02]: MR diff overflow line is a surrogate derived from changes_count ending in +, /diffs has no overflow field — RESEARCH F1
 - [Phase 03-02]: System notes flattened to first line (120 runes) and marked with a system tag — D-07
 - [Phase 03]: Draft via title prefix; compare pre-check blocks empty MR; 409 duplicate is an error with !N; writes report unknown outcome with op-specific hints; smoke writes loopback-only — RESEARCH F2/F4/F5, D-09, D-15
+- [Phase 03-04]: create_merge_request_note pre-reads the MR for web_url and a clean 404; update_merge_request draft=true is a Draft: title prefix, un-draft is a title without it; empty fields mean not passed
 
 ### Pending Todos
 
@@ -83,6 +85,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-24T17:12:38.033Z
+Last session: 2026-09-24T17:17:28.461Z
 Stopped at: Phase 3 context gathered
 Resume file: .planning/phases/03-merge-requests/03-CONTEXT.md

@@ -125,7 +125,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 03-04-PLAN.md — create_merge_request_note + update_merge_request (optional fields, state_event, draft), 19 tools
+- [x] 03-04-PLAN.md — create_merge_request_note + update_merge_request (optional fields, state_event, draft), 19 tools
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
@@ -155,7 +155,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. Подключение и чтение проекта | 6/6 | Complete   | 2026-09-24 |
 | 2. История и запись в репозиторий | 5/5 | Complete   | 2026-09-24 |
-| 3. Merge Requests | 3/5 | In Progress|  |
+| 3. Merge Requests | 4/5 | In Progress|  |
 | 4. Живая проверка и поставка | 0/TBD | Not started | - |
 
 ## Backlog
