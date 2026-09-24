@@ -240,7 +240,7 @@ func commitCore(ctx context.Context, d Deps, project, branch, message string, ac
         opts.Actions = append(opts.Actions, o)
     }
     c, _, err := d.GL.Commits.CreateCommit(project, opts, gitlab.WithContext(ctx))
-    return c, withWrite("проект", err)
+    return c, withWrite(opCommit, "проект или ветка", err)
 }
 ```
 Verified wire (client-go v2.64.0, executed): `POST /api/v4/projects/g%2Fp/repository/commits`, `Content-Type: application/json`, body `{"branch":"main","commit_message":"m","actions":[{"action":"create","file_path":"a/b.txt","content":"привет\r\n"}]}`; CRLF and Cyrillic survive untouched. No `stats`/`force`/`start_branch` keys are sent when their pointers are nil.
@@ -248,7 +248,7 @@ Verified wire (client-go v2.64.0, executed): `POST /api/v4/projects/g%2Fp/reposi
 ### Pattern 3: Write-aware error mapping (extends Phase 1 `toToolText`)
 `glclient.Classify` gives `Kind`, `Status`, capped `Detail`. For a JSON error `{"message":"..."}` client-go's `parseError` renders `Detail` as `{message: <text>}` (verified: `400 {message: You are not allowed to push into this branch}`), so match by case-insensitive substring, never by equality.
 
-Add a `write bool` to `subjectError` (or a sibling `writeError`) via `withWrite(subject, err)`, and in `toToolText` handle write errors before the generic switch:
+Add a `write bool` to `subjectError` (or a sibling `writeError`) via `withWrite(op, subject, err)`, and in `toToolText` handle write errors before the generic switch:
 
 | Situation (source) | Kind/Status | Detail contains (lowercase) | Text (Russian) |
 |---|---|---|---|
@@ -459,15 +459,18 @@ Marshal `ListTools` result with `json.MarshalIndent` (encoding/json sorts map ke
 | A6 | Branch/tag names with `/` or `.` in the `:sha` path segment are accepted by GitLab when escaped by client-go (`feature%2Fx`, `%2E`) [ASSUMED: docs say "Commit hash or branch/tag name"] | Don't Hand-Roll | `get_commit`/diff by branch name would 404; workaround is passing a SHA; check live in Phase 4 |
 | A7 | Content-empty-string create is accepted by GitLab (`content:""`) | Pitfall 7 | Creating an empty file could return 400 "content is missing"; the mapper shows the detail; low impact |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Does `GET /projects/:id/repository/branches?page=N` paginate by offset with `X-Next-Page` on gitlab.com?**
    - What we know: the endpoint is served by a keyset-capable Gitaly pager; the source excerpt shows keyset is one of three branches of the pager logic and the docs are silent.
    - What's unclear: which branch a plain `page/per_page` request takes.
    - Recommendation: implement with the existing `PageFooter` (NextPage then NextLink fallback), add a fake test for "Link only", and record the live result in the Phase 4 checklist. If keyset is confirmed, switch the hint to explain `page_token` or cap `list_branches` output and ask to narrow with `search`.
+   - RESOLVED: handled by the `PageFooter` `NextLink` fallback plus a Link-only fake test in 02-01; the keyset risk is accepted and live verification is deferred to Phase 4 (carried via 02-01-SUMMARY.md).
 2. **Is a per-file `+/-` line for `commit_files` worth an extra `GetCommitDiff` request?**
    - Recommendation: no. Totals in the header, `get_commit` for detail (A1).
+   - RESOLVED: 02-04 adds one follow-up `fetchCommitDiff` GET after a successful commit, following locked D-05 (deviates from this recommendation); a failed follow-up never turns the commit into an error.
 3. **Should identical-content updates be blocked or written?** (A4) Recommendation: block with a clear message; it is cheap and avoids an ambiguous GitLab reaction.
+   - RESOLVED: 02-05 always sends the POST as given, following locked D-08 (deviates from this recommendation); GitLab's answer is reported through the normal success/error path.
 
 ## Environment Availability
 

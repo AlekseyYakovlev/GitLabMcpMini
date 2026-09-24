@@ -71,7 +71,28 @@ Plans:
   3. Пользователь может одним коммитом создать/изменить/удалить несколько файлов (`commit_files`, `actions[]`, без `force`) и увидеть новый коммит через `get_commit`; схема вложенных `actions[]` принимается клиентом 1.30.x
   4. Пользователь может создать или обновить один файл (`create_or_update_file`); при «уже существует»/«не существует» и при защищённой ветке или недостаточном scope приходит понятное сообщение; запросы записи не повторяются автоматически
 
-**Plans**: TBD
+**Plans**: 5 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 02-01-PLAN.md — Branches slice: list_branches + create_branch, write-aware error wording, fake body capture, 7-tool e2e/smoke
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 02-02-PLAN.md — History slice: list_commits + get_commit with budgeted diff rendering (explicit too_large/collapsed reasons)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 02-03-PLAN.md — compare_refs with server-side file paging, compare_timeout/same-ref states
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 02-04-PLAN.md — commit_files: explicit nested actions[] schema, guards, single POST, per-file +/-, golden tools/list, real-client proof
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [ ] 02-05-PLAN.md — create_or_update_file: GET-based create/update, last_commit_id conflict, CRLF warning, all 12 tools e2e
 
 ### Phase 3: Merge Requests
 
@@ -111,6 +132,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Подключение и чтение проекта | 6/6 | Complete   | 2026-09-24 |
-| 2. История и запись в репозиторий | 0/TBD | Not started | - |
+| 2. История и запись в репозиторий | 0/5 | Planned | - |
 | 3. Merge Requests | 0/TBD | Not started | - |
 | 4. Живая проверка и поставка | 0/TBD | Not started | - |
