@@ -48,7 +48,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 01-04-PLAN.md — Output budget/pagination footer + list_projects and get_project
+- [x] 01-04-PLAN.md — Output budget/pagination footer + list_projects and get_project
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
@@ -110,7 +110,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Подключение и чтение проекта | 3/6 | In Progress|  |
+| 1. Подключение и чтение проекта | 4/6 | In Progress|  |
 | 2. История и запись в репозиторий | 0/TBD | Not started | - |
 | 3. Merge Requests | 0/TBD | Not started | - |
 | 4. Живая проверка и поставка | 0/TBD | Not started | - |
