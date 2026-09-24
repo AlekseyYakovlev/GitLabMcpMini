@@ -56,6 +56,12 @@ func Register(s *mcp.Server, d Deps) {
 	}, safe(d, getCommit(d)))
 
 	mcp.AddTool(s, &mcp.Tool{
+		Name:        "compare_refs",
+		Description: compareRefsDescription,
+		Annotations: &mcp.ToolAnnotations{ReadOnlyHint: true},
+	}, safe(d, compareRefs(d)))
+
+	mcp.AddTool(s, &mcp.Tool{
 		Name:        "create_branch",
 		Description: createBranchDescription,
 		Annotations: &mcp.ToolAnnotations{DestructiveHint: gitlab.Ptr(false)},
