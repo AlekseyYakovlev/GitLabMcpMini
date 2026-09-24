@@ -4,11 +4,14 @@ import (
 	"bytes"
 	"context"
 	"os/exec"
+	"sort"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+
+	"gitlab-mcp/internal/testutil"
 )
 
 func TestStdioHandshakeAndWhoami(t *testing.T) {
@@ -112,6 +115,109 @@ func TestStdioMissingToken(t *testing.T) {
 	}
 	if stdout.Len() != 0 {
 		t.Errorf("stdout must be empty, got %q", stdout.String())
+	}
+}
+
+// TestStdioWirePaths drives the real binary and checks the exact bytes that
+// reach GitLab: project and file paths must be percent-encoded exactly once.
+func TestStdioWirePaths(t *testing.T) {
+	const projectJSON = `{"id":1,"path_with_namespace":"g/p","default_branch":"main"}`
+	const fileJSON = `{"file_name":"f","file_path":"f","size":6,"encoding":"base64","content":"aGVsbG8K","ref":"main","blob_id":"b1","last_commit_id":"c1"}`
+	const treeJSON = `[{"id":"a","name":"x.go","type":"blob","path":"x.go","mode":"100644"}]`
+
+	const files = "/api/v4/projects/g%2Fp/repository/files/"
+	cases := []struct {
+		name string
+		tool string
+		args map[string]any
+		want string // expected "METHOD RequestURI"
+		body string
+	}{
+		{
+			"project with dot", "get_project",
+			map[string]any{"project": "group/sub/my.proj"},
+			"GET /api/v4/projects/group%2Fsub%2Fmy%2Eproj", projectJSON,
+		},
+		{
+			"project with space and Cyrillic", "get_project",
+			map[string]any{"project": "gr oup/проект"},
+			"GET /api/v4/projects/gr%20oup%2F%D0%BF%D1%80%D0%BE%D0%B5%D0%BA%D1%82", projectJSON,
+		},
+		{
+			"file with space, hash and ref with slash", "get_file_contents",
+			map[string]any{"project": "g/p", "path": "dir with space/a#b.txt", "ref": "feature/x"},
+			"GET " + files + "dir%20with%20space%2Fa%23b%2Etxt?ref=feature%2Fx", fileJSON,
+		},
+		{
+			"file with plus", "get_file_contents",
+			map[string]any{"project": "g/p", "path": "a+b.txt", "ref": "main"},
+			"GET " + files + "a+b%2Etxt?ref=main", fileJSON,
+		},
+		{
+			"file with percent", "get_file_contents",
+			map[string]any{"project": "g/p", "path": "100%.txt", "ref": "main"},
+			"GET " + files + "100%25%2Etxt?ref=main", fileJSON,
+		},
+		{
+			"file with Cyrillic", "get_file_contents",
+			map[string]any{"project": "g/p", "path": "файл/имя.go", "ref": "main"},
+			"GET " + files + "%D1%84%D0%B0%D0%B9%D0%BB%2F%D0%B8%D0%BC%D1%8F%2Ego?ref=main", fileJSON,
+		},
+		{
+			"tree with awkward path", "list_repository_tree",
+			map[string]any{
+				"project": "g/sub/p", "path": "dir with space/ф+#%", "ref": "feature/x",
+				"page": 2, "per_page": 20, "recursive": true,
+			},
+			"GET /api/v4/projects/g%2Fsub%2Fp/repository/tree?page=2&path=dir+with+space%2F%D1%84%2B%23%25&per_page=20&recursive=true&ref=feature%2Fx",
+			treeJSON,
+		},
+	}
+
+	fake := testutil.NewFakeGitLab(t)
+	for _, tc := range cases {
+		route := strings.TrimPrefix(tc.want, "GET ")
+		route, _, _ = strings.Cut(route, "?")
+		fake.JSON("GET", route, 200, tc.body, nil)
+	}
+	s := startSession(t, fake.URL)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	list, err := s.ListTools(ctx, nil)
+	if err != nil {
+		t.Fatalf("ListTools: %v", err)
+	}
+	var names []string
+	for _, tool := range list.Tools {
+		names = append(names, tool.Name)
+	}
+	sort.Strings(names)
+	wantNames := []string{"get_file_contents", "get_project", "list_projects", "list_repository_tree", "whoami"}
+	if strings.Join(names, ",") != strings.Join(wantNames, ",") {
+		t.Fatalf("tools = %v, want %v", names, wantNames)
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			fake.Reset()
+			res, err := s.CallTool(ctx, &mcp.CallToolParams{Name: tc.tool, Arguments: tc.args})
+			if err != nil {
+				t.Fatalf("CallTool %s: %v", tc.tool, err)
+			}
+			if res.IsError {
+				t.Fatalf("%s returned isError: %s", tc.tool, resultText(res))
+			}
+			reqs := fake.Requests()
+			if len(reqs) != 1 || reqs[0] != tc.want {
+				t.Errorf("requests = %v, want exactly [%s]", reqs, tc.want)
+			}
+		})
+	}
+
+	if strings.Contains(s.stderr.String(), testToken) {
+		t.Errorf("stderr leaks the token: %q", s.stderr.String())
 	}
 }
 

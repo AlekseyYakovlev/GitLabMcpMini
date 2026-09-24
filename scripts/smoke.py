@@ -9,8 +9,14 @@ env), performs initialize and tools/list, checks every tool against the agent's
 limits, and calls the tools. The token is read from GITLAB_TOKEN and is never
 printed.
 
+Two modes:
+    hermetic  --base-url points at a fake GitLab (used by the Go e2e tests).
+    live      no --base-url: read-only calls against gitlab.com with the real
+              GITLAB_TOKEN; --project is required and the first list_projects
+              page is printed so default_branch can be checked by eye.
+
 Usage:
-    uv run scripts/smoke.py [--exe PATH] [--base-url URL]
+    uv run scripts/smoke.py [--exe PATH] [--base-url URL] [--project P] [--file F]
 """
 
 import argparse
@@ -25,6 +31,13 @@ from mcp.client.stdio import stdio_client
 EXPECTED_PROTOCOL = "2025-11-25"
 MAX_TOOL_NAME = 30
 MAX_TOOL_DESCRIPTION = 900
+EXPECTED_TOOLS = {
+    "whoami",
+    "list_projects",
+    "get_project",
+    "list_repository_tree",
+    "get_file_contents",
+}
 FORBIDDEN_SCHEMA_KEYS = {"$ref", "$defs", "anyOf", "oneOf"}
 
 
@@ -70,7 +83,7 @@ def default_exe() -> str:
     return str(root / name)
 
 
-async def run(exe: str, base_url: str | None, token: str) -> None:
+async def run(exe: str, base_url: str | None, token: str, project: str, file_path: str) -> None:
     env = {"GITLAB_TOKEN": token}
     if base_url:
         env["GITLAB_URL"] = base_url
@@ -99,29 +112,55 @@ async def run(exe: str, base_url: str | None, token: str) -> None:
                 schema = tool.inputSchema
                 check(schema.get("type") == "object", f"{tool.name}: inputSchema type is not object")
                 walk_schema(schema, tool.name)
-            check("whoami" in names, f"whoami missing from tools: {sorted(names)}")
+            check(
+                names == EXPECTED_TOOLS,
+                f"tool set is {sorted(names)}, want {sorted(EXPECTED_TOOLS)}",
+            )
             print(f"tools: {', '.join(sorted(names))}")
 
-            result = await session.call_tool("whoami", {})
-            text = result_text(result)
-            texts.append(text)
-            check(not result.isError, f"whoami returned isError: {text}")
-            print(text)
+            async def call(name: str, arguments: dict, expect_error: bool = False) -> str:
+                result = await session.call_tool(name, arguments)
+                text = result_text(result)
+                texts.append(text)
+                if expect_error:
+                    check(result.isError, f"{name} {arguments} did not return isError: {text}")
+                else:
+                    check(not result.isError, f"{name} {arguments} returned isError: {text}")
+                print(f"--- {name} {arguments}")
+                print(text)
+                return text
 
-            bad = await session.call_tool("whoami", {"bogus": 1})
-            bad_text = result_text(bad)
-            texts.append(bad_text)
-            check(bad.isError, "whoami with an unknown argument did not return isError")
-            print(bad_text)
+            await call("whoami", {})
+            await call("whoami", {"bogus": 1}, expect_error=True)
+
+            await call("list_projects", {"per_page": 5})
+            await call("get_project", {"project": project})
+            await call("list_repository_tree", {"project": project, "per_page": 1})
+            await call(
+                "get_file_contents",
+                {"project": project, "path": file_path, "end_line": 20},
+            )
+            missing = await call(
+                "get_project",
+                {"project": "no-such-group-xyz/no-such-project"},
+                expect_error=True,
+            )
+            check("404" in missing, f"missing project error does not mention 404: {missing}")
 
     for text in texts:
         check(token not in text, "token appeared in a tool result")
 
 
 def main() -> int:
+    # Tool texts are Russian; a piped stdout on Windows defaults to a legacy code page.
+    for stream in (sys.stdout, sys.stderr):
+        stream.reconfigure(encoding="utf-8", errors="replace")
+
     parser = argparse.ArgumentParser(description="gitlab-mcp smoke client (mcp==1.30.0)")
     parser.add_argument("--exe", default=default_exe(), help="path to gitlab-mcp binary")
     parser.add_argument("--base-url", default=None, help="GITLAB_URL override (fake GitLab)")
+    parser.add_argument("--project", default=None, help="project ID or path to read (required in live mode)")
+    parser.add_argument("--file", default="README.md", help="file path to read from the project")
     args = parser.parse_args()
 
     token = os.environ.get("GITLAB_TOKEN", "").strip()
@@ -129,8 +168,15 @@ def main() -> int:
         print("GITLAB_TOKEN is not set in the environment", file=sys.stderr)
         return 2
 
+    # Without --base-url the script talks to the real gitlab.com (read-only
+    # calls only), so the project to read must be chosen explicitly.
+    if args.base_url is None and not args.project:
+        print("live mode (no --base-url) requires --project GROUP/PROJECT", file=sys.stderr)
+        return 2
+    project = args.project or "g/p"
+
     try:
-        asyncio.run(run(args.exe, args.base_url, token))
+        asyncio.run(run(args.exe, args.base_url, token, project, args.file))
     except Exception as exc:  # noqa: BLE001 - report any client-side failure as a smoke failure
         for leaf in leaf_exceptions(exc):
             message = f"{type(leaf).__name__}: {leaf}".replace(token, "[REDACTED]")
