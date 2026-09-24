@@ -14,18 +14,17 @@
 
 <!-- Shipped and confirmed valuable. -->
 
-(None yet — ship to validate)
+- ✓ Сервер работает по stdio-транспорту MCP и совместим с клиентом `mcp` 1.30.x (initialize, tools/list, tools/call) — Phase 1 (проверено гибридно: e2e на реальном бинарнике + Python-smoke; живой gitlab.com — Phase 4)
+- ✓ Авторизация через PAT из `GITLAB_TOKEN` (fail fast, токен не попадает в вывод и логи) — Phase 1
+- ✓ Понятные ошибки инструментов (401/403/404/429/5xx, сеть) без падения сервера — Phase 1
 
 ### Active
 
 <!-- Current scope. Building toward these. -->
 
-- [ ] Сервер работает по stdio-транспорту MCP и совместим с клиентом агента AiAdventAgentV2 (initialize handshake, tools/list, tools/call)
-- [ ] Авторизация в gitlab.com через Personal Access Token (переменная окружения, например `GITLAB_TOKEN`)
-- [ ] Инструменты чтения кода: список/поиск проектов, дерево файлов, содержимое файла, ветки, коммиты, поиск по коду
+- [ ] Инструменты чтения кода: список/поиск проектов, дерево файлов, содержимое файла, ветки, коммиты, поиск по коду (Phase 1 закрыла проекты, дерево, файлы; ветки и коммиты — Phase 2)
 - [ ] Инструменты Merge Requests: просмотр списка и деталей, diff, создание MR, комментарии, merge
 - [ ] Инструменты записи в репозиторий: создание/изменение файлов, коммиты, создание веток
-- [ ] Понятные ошибки инструментов (сетевые ошибки, 401/403/404, лимиты GitLab API) без падения сервера
 - [ ] Автотесты плюс ручная проверка через stdio-клиент (скрипт или MCP Inspector) на реальном gitlab.com
 
 ### Out of Scope
@@ -84,4 +83,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-24 after initialization*
+*Last updated: 2026-09-24 after Phase 1 (connect-and-read) completion*
