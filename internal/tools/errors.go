@@ -179,6 +179,11 @@ var writeRules = []writeRule{
 		substrings: []string{"a file with this name doesn't exist", "a file with this name does not exist"},
 		text:       "файла нет на ветке (для commit_files используйте action=create или проверьте путь).",
 	},
+	{
+		kind:       glclient.KindBadRequest,
+		substrings: []string{"changed since you started editing"},
+		text:       "файл изменился с момента чтения — прочитайте его заново (get_file_contents) и повторите.",
+	},
 }
 
 // writeUnknownOutcome is appended to failures after which a write may still
