@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 
@@ -134,5 +135,143 @@ func TestListMergeRequestNotesErrors(t *testing.T) {
 	text, isErr = callText(t, cs, "list_merge_request_notes", map[string]any{"project": "g/p", "iid": 5})
 	if !isErr || !strings.Contains(text, "не найдено (MR (iid) или проект)") {
 		t.Errorf("missing MR: isError=%v text=%q", isErr, text)
+	}
+}
+
+func newNoteFake(t testing.TB) *testutil.FakeGitLab {
+	t.Helper()
+	fake := testutil.NewFakeGitLab(t)
+	fake.JSON("GET", mr5Path, 200, mrJSON("mergeable", ""), nil)
+	fake.JSON("POST", mr5NotesPath, 201, `{"id":42,"body":"LGTM","system":false}`, nil)
+	return fake
+}
+
+func TestCreateMergeRequestNote(t *testing.T) {
+	fake := newNoteFake(t)
+	cs := newTestSession(t, fake)
+
+	text, isErr := callText(t, cs, "create_merge_request_note", map[string]any{"project": "g/p", "iid": 5, "body": "LGTM"})
+	if isErr {
+		t.Fatalf("unexpected tool error: %s", text)
+	}
+	want := []string{"GET " + mr5Path, "POST " + mr5NotesPath}
+	if reqs := fake.Requests(); len(reqs) != 2 || reqs[0] != want[0] || reqs[1] != want[1] {
+		t.Fatalf("requests = %v, want %v", reqs, want)
+	}
+	if body := postBody(t, fake); len(body) != 1 || body["body"] != "LGTM" {
+		t.Errorf("POST body = %v, want exactly {body: LGTM}", body)
+	}
+	for _, w := range []string{"комментарий #42 добавлен к MR !5", "https://gitlab.example/g/p/-/merge_requests/5"} {
+		if !strings.Contains(text, w) {
+			t.Errorf("text %q lacks %q", text, w)
+		}
+	}
+}
+
+func TestCreateMergeRequestNoteGuardsSendNothing(t *testing.T) {
+	cases := []struct {
+		name string
+		args map[string]any
+		want string
+	}{
+		{"blank body", map[string]any{"project": "g/p", "iid": 5, "body": "   "}, "пустой комментарий (body)"},
+		{"zero iid", map[string]any{"project": "g/p", "iid": 0, "body": "x"}, "не указан iid MR"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			fake := newNoteFake(t)
+			cs := newTestSession(t, fake)
+			text, isErr := callText(t, cs, "create_merge_request_note", tc.args)
+			if !isErr || !strings.Contains(text, tc.want) {
+				t.Fatalf("isErr=%v text=%q, want error containing %q", isErr, text, tc.want)
+			}
+			if reqs := fake.Requests(); len(reqs) != 0 {
+				t.Errorf("no request expected, got %v", reqs)
+			}
+		})
+	}
+}
+
+func TestCreateMergeRequestNoteMissingMRSendsNoPost(t *testing.T) {
+	fake := newNoteFake(t)
+	fake.JSON("GET", mr5Path, 404, `{"message":"404 Not found"}`, nil)
+	cs := newTestSession(t, fake)
+
+	text, isErr := callText(t, cs, "create_merge_request_note", map[string]any{"project": "g/p", "iid": 5, "body": "x"})
+	if !isErr || !strings.Contains(text, "не найдено (MR (iid) или проект)") {
+		t.Fatalf("isErr=%v text=%q", isErr, text)
+	}
+	if n := countPosts(fake); n != 0 {
+		t.Errorf("POST was sent %d times, want 0", n)
+	}
+}
+
+func TestCreateMergeRequestNoteWithoutIDMentionsQuickActions(t *testing.T) {
+	fake := newNoteFake(t)
+	fake.JSON("POST", mr5NotesPath, 201, `{"id":0}`, nil)
+	cs := newTestSession(t, fake)
+
+	text, isErr := callText(t, cs, "create_merge_request_note", map[string]any{"project": "g/p", "iid": 5, "body": "/label bug"})
+	if isErr {
+		t.Fatalf("unexpected tool error: %s", text)
+	}
+	for _, w := range []string{"комментарий принят (id не возвращён", "быстрые команды", "https://gitlab.example/g/p/-/merge_requests/5"} {
+		if !strings.Contains(text, w) {
+			t.Errorf("text %q lacks %q", text, w)
+		}
+	}
+	if strings.Contains(text, "#0") {
+		t.Errorf("text %q must not show note #0", text)
+	}
+}
+
+func TestCreateMergeRequestNoteSendsBodyUnchanged(t *testing.T) {
+	fake := newNoteFake(t)
+	cs := newTestSession(t, fake)
+
+	body := "  line one\n\nline two\n"
+	if text, isErr := callText(t, cs, "create_merge_request_note", map[string]any{"project": "g/p", "iid": 5, "body": body}); isErr {
+		t.Fatalf("unexpected tool error: %s", text)
+	}
+	var got map[string]any
+	for _, r := range fake.Recorded() {
+		if r.Method == "POST" {
+			if err := json.Unmarshal([]byte(r.Body), &got); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	if got["body"] != body {
+		t.Errorf("body = %q, want %q byte for byte", got["body"], body)
+	}
+}
+
+func TestCreateMergeRequestNoteServerErrorIsSentOnce(t *testing.T) {
+	fake := newNoteFake(t)
+	fake.JSON("POST", mr5NotesPath, 503, `<html>unavailable</html>`, nil)
+	cs := newTestSession(t, fake)
+
+	text, isErr := callText(t, cs, "create_merge_request_note", map[string]any{"project": "g/p", "iid": 5, "body": "x"})
+	if !isErr {
+		t.Fatalf("expected isError, got %q", text)
+	}
+	for _, w := range []string{"Результат записи неизвестен", "list_merge_request_notes"} {
+		if !strings.Contains(text, w) {
+			t.Errorf("text %q lacks %q", text, w)
+		}
+	}
+	if n := countPosts(fake); n != 1 {
+		t.Errorf("POST was sent %d times, want exactly 1", n)
+	}
+}
+
+func TestCreateMergeRequestNoteForbiddenUsesWriteWording(t *testing.T) {
+	fake := newNoteFake(t)
+	fake.JSON("POST", mr5NotesPath, 403, `{"message":"403 Forbidden"}`, nil)
+	cs := newTestSession(t, fake)
+
+	text, isErr := callText(t, cs, "create_merge_request_note", map[string]any{"project": "g/p", "iid": 5, "body": "x"})
+	if !isErr || !strings.Contains(text, "запись отклонена") {
+		t.Fatalf("isErr=%v text=%q, want the write 403 wording", isErr, text)
 	}
 }

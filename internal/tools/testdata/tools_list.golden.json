@@ -178,6 +178,38 @@
   },
   {
     "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "readOnlyHint": false
+    },
+    "description": "Добавляет общий (не построчный) комментарий к Merge Request: iid — номер после ! в GitLab, body — текст в Markdown, не должен быть пустым. Строки, начинающиеся с «/», GitLab выполняет как quick actions (например /close). Перед записью MR читается один раз, чтобы вернуть ссылку на него и сразу сообщить, если MR нет. Запрос никогда не повторяется автоматически. Запись требует токен со scope api. Заметки MR показывает list_merge_request_notes.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "body": {
+          "description": "comment text in Markdown",
+          "type": "string"
+        },
+        "iid": {
+          "description": "merge request IID, the number after ! in GitLab",
+          "type": "integer"
+        },
+        "project": {
+          "description": "numeric project ID as a string (\"12345\") or full path group/subgroup/project",
+          "type": "string"
+        }
+      },
+      "required": [
+        "project",
+        "iid",
+        "body"
+      ],
+      "type": "object"
+    },
+    "name": "create_merge_request_note"
+  },
+  {
+    "annotations": {
       "destructiveHint": true,
       "idempotentHint": false,
       "readOnlyHint": false
