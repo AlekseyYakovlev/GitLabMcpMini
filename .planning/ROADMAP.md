@@ -76,7 +76,7 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 02-01-PLAN.md — Branches slice: list_branches + create_branch, write-aware error wording, fake body capture, 7-tool e2e/smoke
+- [x] 02-01-PLAN.md — Branches slice: list_branches + create_branch, write-aware error wording, fake body capture, 7-tool e2e/smoke
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -132,6 +132,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Подключение и чтение проекта | 6/6 | Complete   | 2026-09-24 |
-| 2. История и запись в репозиторий | 0/5 | Planned | - |
+| 2. История и запись в репозиторий | 1/5 | In Progress|  |
 | 3. Merge Requests | 0/TBD | Not started | - |
 | 4. Живая проверка и поставка | 0/TBD | Not started | - |
