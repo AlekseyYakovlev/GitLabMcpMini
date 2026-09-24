@@ -134,6 +134,48 @@
   },
   {
     "annotations": {
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "readOnlyHint": false
+    },
+    "description": "Создаёт или обновляет один текстовый файл одним коммитом в существующую ветку (создайте её через create_branch). Сам определяет, создать файл или обновить, и пишет об этом в ответе (created/updated). Защищает от перезаписи чужих правок: при обновлении передаётся last_commit_id, прочитанный с этой же ветки; при конфликте перечитайте файл и повторите. Содержимое пишется как есть; если в файле были CRLF, а в новом тексте их нет, будет предупреждение. Для нескольких файлов используйте commit_files. Запрос не повторяется автоматически. Нужен токен со scope api.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "branch": {
+          "description": "existing branch to commit to; create it first with create_branch",
+          "type": "string"
+        },
+        "commit_message": {
+          "description": "commit message, not empty",
+          "type": "string"
+        },
+        "content": {
+          "description": "full new UTF-8 text content of the file",
+          "type": "string"
+        },
+        "path": {
+          "description": "file path inside the repository",
+          "type": "string"
+        },
+        "project": {
+          "description": "numeric project ID as a string (\"12345\") or full path group/subgroup/project",
+          "type": "string"
+        }
+      },
+      "required": [
+        "project",
+        "path",
+        "content",
+        "branch",
+        "commit_message"
+      ],
+      "type": "object"
+    },
+    "name": "create_or_update_file"
+  },
+  {
+    "annotations": {
       "idempotentHint": false,
       "readOnlyHint": true
     },

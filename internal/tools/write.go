@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -20,6 +21,16 @@ const commitFilesDescription = "Один коммит с несколькими 
 	"используйте create_or_update_file. Запрос не повторяется автоматически. " +
 	"В ответе: SHA коммита (его можно передать в get_commit), +/- по файлам и ссылка. " +
 	"Нужен токен со scope api."
+
+const createOrUpdateFileDescription = "Создаёт или обновляет один текстовый файл одним коммитом в существующую ветку " +
+	"(создайте её через create_branch). Сам определяет, создать файл или обновить, и пишет об этом " +
+	"в ответе (created/updated). Защищает от перезаписи чужих правок: при обновлении передаётся " +
+	"last_commit_id, прочитанный с этой же ветки; при конфликте перечитайте файл и повторите. " +
+	"Содержимое пишется как есть; если в файле были CRLF, а в новом тексте их нет, будет предупреждение. " +
+	"Для нескольких файлов используйте commit_files. Запрос не повторяется автоматически. " +
+	"Нужен токен со scope api."
+
+const crlfWarning = "предупреждение: концы строк изменились CRLF→LF (в прежней версии файла были CRLF)"
 
 const (
 	// maxCommitActions is the most file changes accepted in one commit.
@@ -185,6 +196,79 @@ func commitCore(ctx context.Context, d Deps, project, branch, message string, ac
 		return nil, withWrite(opCommit, "проект или ветка", err)
 	}
 	return commit, nil
+}
+
+// UpsertFileIn is the input of create_or_update_file.
+type UpsertFileIn struct {
+	Project       string `json:"project" jsonschema:"numeric project ID as a string (\"12345\") or full path group/subgroup/project"`
+	Path          string `json:"path" jsonschema:"file path inside the repository"`
+	Content       string `json:"content" jsonschema:"full new UTF-8 text content of the file"`
+	Branch        string `json:"branch" jsonschema:"existing branch to commit to; create it first with create_branch"`
+	CommitMessage string `json:"commit_message" jsonschema:"commit message, not empty"`
+}
+
+// createOrUpdateFile returns the handler for the create_or_update_file tool.
+// The file is read on the target branch to decide between create and update
+// (an update carries the read last_commit_id so a concurrent change is
+// rejected by GitLab); the commit POST is sent exactly once and never retried.
+func createOrUpdateFile(d Deps) func(ctx context.Context, in UpsertFileIn) (string, error) {
+	return func(ctx context.Context, in UpsertFileIn) (string, error) {
+		project, err := glclient.NormalizeProject(in.Project)
+		if err != nil {
+			return "", err
+		}
+		path, err := glclient.NormalizeRepoPath(in.Path)
+		if err != nil {
+			return "", err
+		}
+		if path == "" {
+			return "", errors.New("не указан путь к файлу")
+		}
+		branch := strings.TrimSpace(in.Branch)
+		fa := fileAction{Path: path, Content: in.Content, sendContent: true}
+		if err := validateCommitInput(branch, in.CommitMessage, []fileAction{fa}); err != nil {
+			return "", err
+		}
+
+		var warning string
+		f, _, err := d.GL.RepositoryFiles.GetFile(project, path, &gitlab.GetFileOptions{Ref: gitlab.Ptr(branch)}, gitlab.WithContext(ctx))
+		switch {
+		case err == nil:
+			fa.Action = actUpdate
+			fa.LastCommitID = f.LastCommitID
+			raw, decErr := decodeFileContent(f)
+			if decErr != nil {
+				return "", decErr
+			}
+			if !isBinary(raw) && bytes.Contains(raw, []byte("\r\n")) && !strings.Contains(in.Content, "\r\n") {
+				warning = crlfWarning
+			}
+		case glclient.Classify(err).Kind == glclient.KindNotFound:
+			fa.Action = actCreate
+		default:
+			return "", withSubject("файл", err)
+		}
+
+		commit, err := commitCore(ctx, d, project, branch, in.CommitMessage, []fileAction{fa})
+		if err != nil {
+			return "", err
+		}
+
+		verb := "created"
+		if fa.Action == actUpdate {
+			verb = "updated"
+		}
+		short := commit.ShortID
+		if short == "" {
+			short = shortSHA(commit.ID)
+		}
+		lines := []string{fmt.Sprintf("%s %s: коммит %s в %s", verb, path, short, branch)}
+		if warning != "" {
+			lines = append(lines, warning)
+		}
+		lines = append(lines, commit.WebURL)
+		return strings.Join(lines, "\n"), nil
+	}
 }
 
 // fileStat is the number of added and removed lines of one file of a commit.

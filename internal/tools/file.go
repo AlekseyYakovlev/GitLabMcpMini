@@ -64,14 +64,9 @@ func getFileContents(d Deps) func(ctx context.Context, in FileIn) (string, error
 			return "", withSubject("файл", err)
 		}
 
-		var raw []byte
-		if f.Encoding == "base64" {
-			raw, err = base64.StdEncoding.DecodeString(f.Content)
-			if err != nil {
-				return "", fmt.Errorf("не удалось декодировать содержимое файла: %w", err)
-			}
-		} else {
-			raw = []byte(f.Content)
+		raw, err := decodeFileContent(f)
+		if err != nil {
+			return "", err
 		}
 
 		label := path + " @ " + refLabel(ref, isDefault)
@@ -105,6 +100,19 @@ func getFileContents(d Deps) func(ctx context.Context, in FileIn) (string, error
 		}
 		return sb.String(), nil
 	}
+}
+
+// decodeFileContent returns the raw bytes of a repository file as GitLab
+// delivered them (base64 or plain).
+func decodeFileContent(f *gitlab.File) ([]byte, error) {
+	if f.Encoding == "base64" {
+		raw, err := base64.StdEncoding.DecodeString(f.Content)
+		if err != nil {
+			return nil, fmt.Errorf("не удалось декодировать содержимое файла: %w", err)
+		}
+		return raw, nil
+	}
+	return []byte(f.Content), nil
 }
 
 // isBinary reports whether b looks like binary content: a NUL byte, or bytes
