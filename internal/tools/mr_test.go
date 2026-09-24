@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -202,5 +203,120 @@ func TestGetMergeRequestDescriptionCut(t *testing.T) {
 	}
 	if strings.Contains(text, strings.Repeat("я", 1600)) {
 		t.Errorf("description was not cut at %d runes", mrDescriptionRunes)
+	}
+}
+
+func TestGetMergeRequestRejectsBadIID(t *testing.T) {
+	for _, iid := range []int{0, -3} {
+		fake := testutil.NewFakeGitLab(t)
+		cs := newTestSession(t, fake)
+		text, isErr := callText(t, cs, "get_merge_request", map[string]any{"project": "g/p", "iid": iid})
+		if !isErr || !strings.Contains(text, "не указан iid MR") {
+			t.Errorf("iid %d: isErr=%v text=%q", iid, isErr, text)
+		}
+		if reqs := fake.Requests(); len(reqs) != 0 {
+			t.Errorf("iid %d: requests = %v, want none", iid, reqs)
+		}
+	}
+
+	fake := testutil.NewFakeGitLab(t)
+	cs := newTestSession(t, fake)
+	text, isErr := callText(t, cs, "get_merge_request", map[string]any{"project": "g/p", "iid": "5"})
+	if !isErr {
+		t.Errorf("a string iid must be rejected by the schema, got %q", text)
+	}
+	if reqs := fake.Requests(); len(reqs) != 0 {
+		t.Errorf("string iid: requests = %v, want none", reqs)
+	}
+}
+
+func TestMergeRequestNotFoundNamesSubject(t *testing.T) {
+	fake := testutil.NewFakeGitLab(t)
+	fake.JSON("GET", mr5Path, 404, `{"message":"404 Not found"}`, nil)
+	fake.JSON("GET", mrsPath, 404, `{"message":"404 Project Not Found"}`, nil)
+	cs := newTestSession(t, fake)
+
+	text, isErr := callText(t, cs, "get_merge_request", map[string]any{"project": "g/p", "iid": 5})
+	if !isErr || !strings.Contains(text, "404: не найдено (MR (iid) или проект)") {
+		t.Errorf("get: isErr=%v text=%q", isErr, text)
+	}
+	text, isErr = callText(t, cs, "list_merge_requests", map[string]any{"project": "g/p"})
+	if !isErr || !strings.Contains(text, "404: не найдено (проект)") {
+		t.Errorf("list: isErr=%v text=%q", isErr, text)
+	}
+}
+
+func TestListMergeRequestsNextPageFooter(t *testing.T) {
+	t.Run("X-Next-Page", func(t *testing.T) {
+		fake := testutil.NewFakeGitLab(t)
+		fake.JSON("GET", mrsPath, 200, mrListJSON, map[string]string{"X-Next-Page": "2"})
+		cs := newTestSession(t, fake)
+		text, _ := callText(t, cs, "list_merge_requests", map[string]any{"project": "g/p"})
+		if !strings.HasSuffix(text, "есть следующая страница: вызовите с page=2]") {
+			t.Errorf("text = %q", text)
+		}
+	})
+	t.Run("Link only", func(t *testing.T) {
+		fake := testutil.NewFakeGitLab(t)
+		link := "<" + fake.URL + "/api/v4/projects/g%2Fp/merge_requests?page=2&per_page=20&state=opened>; rel=\"next\""
+		fake.JSON("GET", mrsPath, 200, mrListJSON, map[string]string{"Link": link})
+		cs := newTestSession(t, fake)
+		text, _ := callText(t, cs, "list_merge_requests", map[string]any{"project": "g/p"})
+		if !strings.Contains(text, "есть следующая страница") {
+			t.Errorf("Link-only answer must still announce a next page: %q", text)
+		}
+	})
+	t.Run("last page", func(t *testing.T) {
+		fake := testutil.NewFakeGitLab(t)
+		fake.JSON("GET", mrsPath, 200, mrListJSON, nil)
+		cs := newTestSession(t, fake)
+		text, _ := callText(t, cs, "list_merge_requests", map[string]any{"project": "g/p"})
+		if !strings.HasSuffix(text, "последняя страница]") {
+			t.Errorf("text = %q", text)
+		}
+	})
+}
+
+func TestListMergeRequestsLongOutputIsBudgeted(t *testing.T) {
+	var items []string
+	long := strings.Repeat("т", 300)
+	branch := strings.Repeat("b", 60)
+	for i := 1; i <= 100; i++ {
+		items = append(items, fmt.Sprintf(
+			`{"iid":%d,"state":"opened","title":%q,"source_branch":%q,"target_branch":%q,"author":{"username":"alice"}}`,
+			i, long, branch, branch))
+	}
+	fake := testutil.NewFakeGitLab(t)
+	fake.JSON("GET", mrsPath, 200, "["+strings.Join(items, ",")+"]", nil)
+	cs := newTestSession(t, fake)
+
+	text, isErr := callText(t, cs, "list_merge_requests", map[string]any{"project": "g/p", "per_page": 100})
+	if isErr {
+		t.Fatalf("unexpected tool error: %s", text)
+	}
+	if !strings.Contains(text, TruncatedFooter) {
+		t.Errorf("want the truncation footer, got %d runes", len([]rune(text)))
+	}
+	if n := len([]rune(text)); n > OutputBudget+len([]rune(TruncatedFooter))+200 {
+		t.Errorf("output is %d runes, want at most the budget plus footers", n)
+	}
+	for _, line := range strings.Split(text, "\n") {
+		if len([]rune(line)) > 300 {
+			t.Errorf("line not bounded by mrTitleRunes: %d runes", len([]rune(line)))
+		}
+	}
+}
+
+func TestGetMergeRequestNumericProjectID(t *testing.T) {
+	fake := testutil.NewFakeGitLab(t)
+	fake.JSON("GET", "/api/v4/projects/123/merge_requests/5", 200, mrJSON("mergeable", ""), nil)
+	cs := newTestSession(t, fake)
+
+	text, isErr := callText(t, cs, "get_merge_request", map[string]any{"project": "123", "iid": 5})
+	if isErr {
+		t.Fatalf("unexpected tool error: %s", text)
+	}
+	if reqs := fake.Requests(); len(reqs) != 1 || reqs[0] != "GET /api/v4/projects/123/merge_requests/5" {
+		t.Errorf("requests = %v", reqs)
 	}
 }
