@@ -14,7 +14,7 @@ Two modes:
     live      no --base-url: read-only calls against gitlab.com with the real
               GITLAB_TOKEN; --project is required and the first list_projects
               page is printed so default_branch can be checked by eye. Write
-              tools (create_branch, commit_files) and get_commit (needs a
+              tools (create_branch, commit_files, create_or_update_file) and get_commit (needs a
               known SHA) are called only in hermetic mode.
 
 Usage:
@@ -45,6 +45,7 @@ EXPECTED_TOOLS = {
     "get_commit",
     "compare_refs",
     "commit_files",
+    "create_or_update_file",
 }
 FAKE_SHA = "a1b2c3d4e5f6a7b8c9d0a1b2c3d4e5f6a7b8c9d0"
 FORBIDDEN_SCHEMA_KEYS = {"$ref", "$defs", "anyOf", "oneOf"}
@@ -189,6 +190,20 @@ async def run(exe: str, base_url: str | None, token: str, project: str, file_pat
                     },
                 )
                 check("create smoke/a.md" in committed, f"commit_files result lacks the created file line: {committed}")
+                upserted = await call(
+                    "create_or_update_file",
+                    {
+                        "project": project,
+                        "path": "README.md",
+                        "content": "# Hello\nworld\n",
+                        "branch": "smoke/branch",
+                        "commit_message": "smoke update",
+                    },
+                )
+                check(
+                    upserted.startswith("updated"),
+                    f"create_or_update_file result does not start with 'updated': {upserted}",
+                )
             missing = await call(
                 "get_project",
                 {"project": "no-such-group-xyz/no-such-project"},

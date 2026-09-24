@@ -48,16 +48,24 @@ func TestPythonSmoke(t *testing.T) {
 		var body struct {
 			Branch  string `json:"branch"`
 			Actions []struct {
-				Action   string `json:"action"`
-				FilePath string `json:"file_path"`
+				Action       string `json:"action"`
+				FilePath     string `json:"file_path"`
+				Content      string `json:"content"`
+				LastCommitID string `json:"last_commit_id"`
 			} `json:"actions"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 			t.Errorf("commit body is not JSON: %v", err)
 		}
-		if body.Branch != "smoke/branch" || len(body.Actions) != 2 ||
-			body.Actions[0].Action != "create" || body.Actions[0].FilePath != "smoke/a.md" ||
-			body.Actions[1].Action != "delete" || body.Actions[1].FilePath != "old.txt" {
+		// Either the two-action commit_files body or the one-action update of
+		// create_or_update_file; anything else fails the test.
+		isCommitFiles := len(body.Actions) == 2 &&
+			body.Actions[0].Action == "create" && body.Actions[0].FilePath == "smoke/a.md" &&
+			body.Actions[1].Action == "delete" && body.Actions[1].FilePath == "old.txt"
+		isUpsert := len(body.Actions) == 1 &&
+			body.Actions[0].Action == "update" && body.Actions[0].FilePath == "README.md" &&
+			body.Actions[0].Content == "# Hello\nworld\n" && body.Actions[0].LastCommitID == "c1"
+		if body.Branch != "smoke/branch" || (!isCommitFiles && !isUpsert) {
 			t.Errorf("unexpected commit body: %+v", body)
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -113,6 +121,9 @@ func TestPythonSmoke(t *testing.T) {
 	}
 	if !strings.Contains(stdout.String(), "delete old.txt (+0/−1)") {
 		t.Errorf("stdout does not contain the commit_files deleted-file line:\n%s", stdout.String())
+	}
+	if !strings.Contains(stdout.String(), "updated README.md") {
+		t.Errorf("stdout does not contain the create_or_update_file result:\n%s", stdout.String())
 	}
 	if strings.Contains(stdout.String(), testToken) || strings.Contains(stderr.String(), testToken) {
 		t.Errorf("smoke output leaks the token")
