@@ -74,6 +74,12 @@ func Register(s *mcp.Server, d Deps) {
 	}, safe(d, getMergeRequest(d)))
 
 	mcp.AddTool(s, &mcp.Tool{
+		Name:        "get_merge_request_diffs",
+		Description: getMergeRequestDiffsDescription,
+		Annotations: &mcp.ToolAnnotations{ReadOnlyHint: true},
+	}, safe(d, getMergeRequestDiffs(d)))
+
+	mcp.AddTool(s, &mcp.Tool{
 		Name:        "create_branch",
 		Description: createBranchDescription,
 		Annotations: &mcp.ToolAnnotations{DestructiveHint: gitlab.Ptr(false)},

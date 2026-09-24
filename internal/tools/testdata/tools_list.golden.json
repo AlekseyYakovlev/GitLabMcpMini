@@ -277,6 +277,40 @@
       "idempotentHint": false,
       "readOnlyHint": true
     },
+    "description": "Diff Merge Request по файлам: iid — номер после ! в GitLab. Patch каждого файла ограничен 2000 символами, весь вывод — 15000. Если patch у файла не показан, рядом указана причина (too_large, collapsed, только переименование, только смена режима, пустой или бинарный файл) и как прочитать содержимое через get_file_contents. Если в MR больше 1000 файлов, GitLab отдаёт не все, и вывод говорит «часть файлов не вернулась». page и per_page листают файлы; подсказка внизу говорит, есть ли следующая страница.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "iid": {
+          "description": "merge request IID, the number after ! in GitLab",
+          "type": "integer"
+        },
+        "page": {
+          "description": "page of files, default 1",
+          "type": "integer"
+        },
+        "per_page": {
+          "description": "files per page, default 20, max 100",
+          "type": "integer"
+        },
+        "project": {
+          "description": "numeric project ID as a string (\"12345\") or full path group/subgroup/project",
+          "type": "string"
+        }
+      },
+      "required": [
+        "project",
+        "iid"
+      ],
+      "type": "object"
+    },
+    "name": "get_merge_request_diffs"
+  },
+  {
+    "annotations": {
+      "idempotentHint": false,
+      "readOnlyHint": true
+    },
     "description": "Ключевые поля одного проекта GitLab: id, путь, ветка по умолчанию, видимость, архивный ли, дата последней активности, ссылка и описание. Проект задаётся числовым ID или путём group/subgroup/project.",
     "inputSchema": {
       "additionalProperties": false,
