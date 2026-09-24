@@ -4,13 +4,13 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Phase 3 context gathered
-last_updated: "2026-09-24T17:02:58.782Z"
+last_updated: "2026-09-24T17:06:46.461Z"
 last_activity: 2026-09-24 -- Phase 03 execution started
 progress:
   total_phases: 9
   completed_phases: 2
   total_plans: 16
-  completed_plans: 12
+  completed_plans: 13
   percent: 22
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-24)
 ## Current Position
 
 Phase: 03 (merge-requests) — EXECUTING
-Plan: 2 of 5
+Plan: 3 of 5
 Status: Executing Phase 03
 Last activity: 2026-09-24 -- Phase 03 execution started
 
-Progress: [████████░░] 75%
+Progress: [████████░░] 81%
 
 ## Performance Metrics
 
@@ -53,6 +53,7 @@ Progress: [████████░░] 75%
 - Trend: -
 
 | Phase 03 P01 | 25min | 3 tasks | 9 files |
+| Phase 03 P02 | 20min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -64,6 +65,8 @@ Recent decisions affecting current work:
 - Roadmap: Vertical MVP, 4 фазы; общие помощники (stdio-харнесс, клиент GitLab, маппер ошибок, бюджет вывода) в Phase 1
 - Research: рекомендован Go + `modelcontextprotocol/go-sdk` v1.8.0, один `gitlab-mcp.exe` (проверено спайком против Python `mcp` 1.30.0)
 - [Phase 03]: Plan 01: list_merge_requests always sends state (default opened) because GitLab defaults to all; shared mergeStatusAdvice table in mr_status.go
+- [Phase 03-02]: MR diff overflow line is a surrogate derived from changes_count ending in +, /diffs has no overflow field — RESEARCH F1
+- [Phase 03-02]: System notes flattened to first line (120 runes) and marked with a system tag — D-07
 
 ### Pending Todos
 
@@ -78,6 +81,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-24T17:02:53.683Z
+Last session: 2026-09-24T17:06:41.251Z
 Stopped at: Phase 3 context gathered
 Resume file: .planning/phases/03-merge-requests/03-CONTEXT.md

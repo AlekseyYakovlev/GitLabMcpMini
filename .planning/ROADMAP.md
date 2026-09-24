@@ -117,7 +117,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 03-02-PLAN.md — MR review slice: get_merge_request_diffs (renderDiffFiles, overflow from changes_count) + list_merge_request_notes ([system]), 16 tools
+- [x] 03-02-PLAN.md — MR review slice: get_merge_request_diffs (renderDiffFiles, overflow from changes_count) + list_merge_request_notes ([system]), 16 tools
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -155,7 +155,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. Подключение и чтение проекта | 6/6 | Complete   | 2026-09-24 |
 | 2. История и запись в репозиторий | 5/5 | Complete   | 2026-09-24 |
-| 3. Merge Requests | 1/5 | In Progress|  |
+| 3. Merge Requests | 2/5 | In Progress|  |
 | 4. Живая проверка и поставка | 0/TBD | Not started | - |
 
 ## Backlog
