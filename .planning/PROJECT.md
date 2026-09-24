@@ -19,13 +19,13 @@
 - ✓ Понятные ошибки инструментов (401/403/404/429/5xx, сеть) без падения сервера — Phase 1
 - ✓ Чтение истории: ветки, коммиты по ref/пути, коммит с diff, сравнение двух ref (`list_branches`, `list_commits`, `get_commit`, `compare_refs`) — Phase 2 (герметично; живой gitlab.com — Phase 4)
 - ✓ Запись в репозиторий: создание ветки, один коммит с несколькими файлами (`commit_files`), правка одного файла (`create_or_update_file`) без повторов POST — Phase 2 (герметично; живой gitlab.com — Phase 4; 5 минорных замечаний ревью в бэклоге 999.1–999.5)
+- ✓ Инструменты Merge Requests: список и детали с пояснением `detailed_merge_status`, diff постранично, комментарии, создание, комментирование, правка и безопасное влитие MR (`list_merge_requests`, `get_merge_request`, `get_merge_request_diffs`, `list_merge_request_notes`, `create_merge_request`, `create_merge_request_note`, `update_merge_request`, `merge_merge_request`; всего 20 tools) — Phase 3 (герметично; живой gitlab.com — Phase 4; замечания ревью WR-01..WR-03 в 03-REVIEW.md)
 
 ### Active
 
 <!-- Current scope. Building toward these. -->
 
 - [ ] Инструменты чтения кода: осталось поиск по коду, если не закрыт Phase 1 (проекты, дерево, файлы — Phase 1; ветки, коммиты — Phase 2)
-- [ ] Инструменты Merge Requests: просмотр списка и деталей, diff, создание MR, комментарии, merge
 - [ ] Автотесты плюс ручная проверка через stdio-клиент (скрипт или MCP Inspector) на реальном gitlab.com
 
 ### Out of Scope
@@ -84,4 +84,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-24 after Phase 2 (history-and-write) completion*
+*Last updated: 2026-09-24 after Phase 3 (merge-requests) completion*
