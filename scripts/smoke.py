@@ -56,6 +56,8 @@ EXPECTED_TOOLS = {
     "get_merge_request_diffs",
     "list_merge_request_notes",
     "create_merge_request",
+    "create_merge_request_note",
+    "update_merge_request",
 }
 FAKE_SHA = "a1b2c3d4e5f6a7b8c9d0a1b2c3d4e5f6a7b8c9d0"
 FORBIDDEN_SCHEMA_KEYS = {"$ref", "$defs", "anyOf", "oneOf"}
@@ -252,6 +254,16 @@ async def run(exe: str, base_url: str | None, token: str, project: str, file_pat
                     },
                 )
                 check("MR !5 создан" in created_mr, f"create_merge_request result lacks the created MR: {created_mr}")
+                noted = await call(
+                    "create_merge_request_note",
+                    {"project": project, "iid": 5, "body": "smoke note"},
+                )
+                check("добавлен к MR !5" in noted, f"create_merge_request_note result lacks the added note: {noted}")
+                updated_mr = await call(
+                    "update_merge_request",
+                    {"project": project, "iid": 5, "title": "smoke MR renamed"},
+                )
+                check("MR !5 обновлён" in updated_mr, f"update_merge_request result lacks the update line: {updated_mr}")
             missing = await call(
                 "get_project",
                 {"project": "no-such-group-xyz/no-such-project"},

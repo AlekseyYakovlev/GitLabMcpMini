@@ -87,6 +87,11 @@ func TestPythonSmoke(t *testing.T) {
 	fake.JSON("GET", "/api/v4/projects/g%2Fp/merge_requests/5", 200,
 		`{"iid":5,"title":"Add x","state":"opened","draft":false,"source_branch":"f","target_branch":"main","author":{"username":"alice"},`+
 			`"detailed_merge_status":"mergeable","changes_count":"1","web_url":"https://gitlab.example/g/p/-/merge_requests/5"}`, nil)
+	fake.JSON("PUT", "/api/v4/projects/g%2Fp/merge_requests/5", 200,
+		`{"iid":5,"state":"opened","draft":false,"title":"smoke MR renamed","source_branch":"f","target_branch":"main",`+
+			`"detailed_merge_status":"mergeable","web_url":"https://gitlab.example/g/p/-/merge_requests/5"}`, nil)
+	fake.JSON("POST", "/api/v4/projects/g%2Fp/merge_requests/5/notes", 201,
+		`{"id":42,"body":"smoke note","system":false}`, nil)
 	fake.JSON("GET", "/api/v4/projects/g%2Fp/merge_requests/5/diffs", 200,
 		`[{"diff":"@@ -1 +1 @@\n-old\n+new\n","new_path":"a.txt","old_path":"a.txt","a_mode":"100644","b_mode":"100644"}]`, nil)
 	fake.JSON("GET", "/api/v4/projects/g%2Fp/merge_requests/5/notes", 200,
@@ -147,6 +152,12 @@ func TestPythonSmoke(t *testing.T) {
 	}
 	if !strings.Contains(stdout.String(), "MR !5 создан") {
 		t.Errorf("stdout does not contain the create_merge_request result:\n%s", stdout.String())
+	}
+	if !strings.Contains(stdout.String(), "комментарий #42 добавлен к MR !5") {
+		t.Errorf("stdout does not contain the create_merge_request_note result:\n%s", stdout.String())
+	}
+	if !strings.Contains(stdout.String(), "MR !5 обновлён") {
+		t.Errorf("stdout does not contain the update_merge_request result:\n%s", stdout.String())
 	}
 	if strings.Contains(stdout.String(), testToken) || strings.Contains(stderr.String(), testToken) {
 		t.Errorf("smoke output leaks the token")
