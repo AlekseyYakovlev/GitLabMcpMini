@@ -13,7 +13,7 @@
 - Integer phases (1, 2, 3): Planned milestone work
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
-- [ ] **Phase 1: Подключение и чтение проекта** - Рабочий stdio-сервер: агент проходит handshake, проверяет токен и читает проекты, дерево и файлы; фундамент и тестовый харнесс
+- [x] **Phase 1: Подключение и чтение проекта** - Рабочий stdio-сервер: агент проходит handshake, проверяет токен и читает проекты, дерево и файлы; фундамент и тестовый харнесс (completed 2026-09-24)
 - [ ] **Phase 2: История и запись в репозиторий** - Агент смотрит ветки, коммиты, сравнения и вносит изменения: ветка, коммит нескольких файлов, правка одного файла
 - [ ] **Phase 3: Merge Requests** - Агент просматривает MR (детали, diff, комментарии), создаёт, комментирует, правит и вливает MR
 - [ ] **Phase 4: Живая проверка и поставка** - Полный сценарий на реальном gitlab.com пройден; один `gitlab-mcp.exe` и README готовы к подключению агента
@@ -56,7 +56,7 @@ Plans:
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 01-06-PLAN.md — get_file_contents (base64, ranges, truncation, binary/oversize) + real-binary wire e2e + five-tool Python smoke
+- [x] 01-06-PLAN.md — get_file_contents (base64, ranges, truncation, binary/oversize) + real-binary wire e2e + five-tool Python smoke
 
 ### Phase 2: История и запись в репозиторий
 
@@ -110,7 +110,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Подключение и чтение проекта | 5/6 | In Progress|  |
+| 1. Подключение и чтение проекта | 6/6 | Complete   | 2026-09-24 |
 | 2. История и запись в репозиторий | 0/TBD | Not started | - |
 | 3. Merge Requests | 0/TBD | Not started | - |
 | 4. Живая проверка и поставка | 0/TBD | Not started | - |
