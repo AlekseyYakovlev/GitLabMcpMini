@@ -23,4 +23,10 @@ func Register(s *mcp.Server, d Deps) {
 		Description: getProjectDescription,
 		Annotations: &mcp.ToolAnnotations{ReadOnlyHint: true},
 	}, safe(d, getProject(d)))
+
+	mcp.AddTool(s, &mcp.Tool{
+		Name:        "list_repository_tree",
+		Description: listRepositoryTreeDescription,
+		Annotations: &mcp.ToolAnnotations{ReadOnlyHint: true},
+	}, safe(d, listRepositoryTree(d)))
 }
