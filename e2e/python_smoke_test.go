@@ -41,6 +41,11 @@ func TestPythonSmoke(t *testing.T) {
 		`[{"diff":"@@ -1 +1,2 @@\n-old\n+new\n+more\n","new_path":"README.md","old_path":"README.md","a_mode":"100644","b_mode":"100644"},`+
 			`{"diff":"","new_path":"big.dat","old_path":"big.dat","a_mode":"100644","b_mode":"100644","too_large":true}]`, nil)
 
+	fake.JSON("GET", "/api/v4/projects/g%2Fp/repository/compare", 200,
+		`{"commits":[{"id":"a1b2c3d4e5f6a7b8c9d0a1b2c3d4e5f6a7b8c9d0","short_id":"a1b2c3d4","title":"Init","author_name":"Alice","committed_date":"2026-09-20T10:00:00Z"}],`+
+			`"diffs":[{"diff":"@@ -1 +1 @@\n-old\n+new\n","new_path":"README.md","old_path":"README.md","a_mode":"100644","b_mode":"100644"}],`+
+			`"compare_timeout":true,"compare_same_ref":false}`, nil)
+
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
@@ -74,6 +79,9 @@ func TestPythonSmoke(t *testing.T) {
 	}
 	if !strings.Contains(stdout.String(), "too_large") {
 		t.Errorf("stdout does not contain the too_large reason for the diff file:\n%s", stdout.String())
+	}
+	if !strings.Contains(stdout.String(), "diff может быть неполным") {
+		t.Errorf("stdout does not contain the compare_timeout warning:\n%s", stdout.String())
 	}
 	if strings.Contains(stdout.String(), testToken) || strings.Contains(stderr.String(), testToken) {
 		t.Errorf("smoke output leaks the token")

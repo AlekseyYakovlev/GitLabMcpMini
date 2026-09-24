@@ -43,6 +43,7 @@ EXPECTED_TOOLS = {
     "create_branch",
     "list_commits",
     "get_commit",
+    "compare_refs",
 }
 FAKE_SHA = "a1b2c3d4e5f6a7b8c9d0a1b2c3d4e5f6a7b8c9d0"
 FORBIDDEN_SCHEMA_KEYS = {"$ref", "$defs", "anyOf", "oneOf"}
@@ -152,6 +153,11 @@ async def run(exe: str, base_url: str | None, token: str, project: str, file_pat
             if base_url:
                 opened = await call("get_commit", {"project": project, "sha": FAKE_SHA})
                 check("файлов на странице" in opened, f"get_commit result lacks the file count: {opened}")
+                compared = await call(
+                    "compare_refs",
+                    {"project": project, "from": "main", "to": "smoke/branch"},
+                )
+                check("→" in compared, f"compare_refs result lacks the from → to header: {compared}")
                 created = await call(
                     "create_branch",
                     {"project": project, "branch": "smoke/branch", "ref": "main"},
