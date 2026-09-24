@@ -3,6 +3,8 @@ package e2e
 import (
 	"bytes"
 	"context"
+	"encoding/json"
+	"net/http"
 	"os/exec"
 	"strings"
 	"testing"
@@ -39,7 +41,30 @@ func TestPythonSmoke(t *testing.T) {
 		`{"id":"a1b2c3d4e5f6a7b8c9d0a1b2c3d4e5f6a7b8c9d0","short_id":"a1b2c3d4","title":"Init","author_name":"Alice","authored_date":"2026-09-20T10:00:00Z","message":"Init","parent_ids":[],"stats":{"additions":2,"deletions":1,"total":3},"web_url":"https://gitlab.example/g/p/-/commit/a1b2c3d4"}`, nil)
 	fake.JSON("GET", commitRoute+"/diff", 200,
 		`[{"diff":"@@ -1 +1,2 @@\n-old\n+new\n+more\n","new_path":"README.md","old_path":"README.md","a_mode":"100644","b_mode":"100644"},`+
-			`{"diff":"","new_path":"big.dat","old_path":"big.dat","a_mode":"100644","b_mode":"100644","too_large":true}]`, nil)
+			`{"diff":"","new_path":"big.dat","old_path":"big.dat","a_mode":"100644","b_mode":"100644","too_large":true},`+
+			`{"diff":"@@ -0,0 +1 @@\n+привет\n","new_path":"smoke/a.md","old_path":"smoke/a.md","a_mode":"0","b_mode":"100644","new_file":true},`+
+			`{"diff":"@@ -1 +0,0 @@\n-x\n","new_path":"old.txt","old_path":"old.txt","a_mode":"100644","b_mode":"0","deleted_file":true}]`, nil)
+	fake.Handle("POST", "/api/v4/projects/g%2Fp/repository/commits", func(w http.ResponseWriter, r *http.Request) {
+		var body struct {
+			Branch  string `json:"branch"`
+			Actions []struct {
+				Action   string `json:"action"`
+				FilePath string `json:"file_path"`
+			} `json:"actions"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Errorf("commit body is not JSON: %v", err)
+		}
+		if body.Branch != "smoke/branch" || len(body.Actions) != 2 ||
+			body.Actions[0].Action != "create" || body.Actions[0].FilePath != "smoke/a.md" ||
+			body.Actions[1].Action != "delete" || body.Actions[1].FilePath != "old.txt" {
+			t.Errorf("unexpected commit body: %+v", body)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_, _ = w.Write([]byte(`{"id":"a1b2c3d4e5f6a7b8c9d0a1b2c3d4e5f6a7b8c9d0","short_id":"a1b2c3d4","title":"smoke commit",` +
+			`"stats":{"additions":1,"deletions":3,"total":4},"web_url":"https://gitlab.example/g/p/-/commit/a1b2c3d4"}`))
+	})
 
 	fake.JSON("GET", "/api/v4/projects/g%2Fp/repository/compare", 200,
 		`{"commits":[{"id":"a1b2c3d4e5f6a7b8c9d0a1b2c3d4e5f6a7b8c9d0","short_id":"a1b2c3d4","title":"Init","author_name":"Alice","committed_date":"2026-09-20T10:00:00Z"}],`+
@@ -82,6 +107,12 @@ func TestPythonSmoke(t *testing.T) {
 	}
 	if !strings.Contains(stdout.String(), "diff может быть неполным") {
 		t.Errorf("stdout does not contain the compare_timeout warning:\n%s", stdout.String())
+	}
+	if !strings.Contains(stdout.String(), "create smoke/a.md (+1/−0)") {
+		t.Errorf("stdout does not contain the commit_files created-file line:\n%s", stdout.String())
+	}
+	if !strings.Contains(stdout.String(), "delete old.txt (+0/−1)") {
+		t.Errorf("stdout does not contain the commit_files deleted-file line:\n%s", stdout.String())
 	}
 	if strings.Contains(stdout.String(), testToken) || strings.Contains(stderr.String(), testToken) {
 		t.Errorf("smoke output leaks the token")

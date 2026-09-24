@@ -14,8 +14,8 @@ Two modes:
     live      no --base-url: read-only calls against gitlab.com with the real
               GITLAB_TOKEN; --project is required and the first list_projects
               page is printed so default_branch can be checked by eye. Write
-              tools (create_branch) and get_commit (needs a known SHA) are
-              called only in hermetic mode.
+              tools (create_branch, commit_files) and get_commit (needs a
+              known SHA) are called only in hermetic mode.
 
 Usage:
     uv run scripts/smoke.py [--exe PATH] [--base-url URL] [--project P] [--file F]
@@ -44,6 +44,7 @@ EXPECTED_TOOLS = {
     "list_commits",
     "get_commit",
     "compare_refs",
+    "commit_files",
 }
 FAKE_SHA = "a1b2c3d4e5f6a7b8c9d0a1b2c3d4e5f6a7b8c9d0"
 FORBIDDEN_SCHEMA_KEYS = {"$ref", "$defs", "anyOf", "oneOf"}
@@ -126,6 +127,18 @@ async def run(exe: str, base_url: str | None, token: str, project: str, file_pat
             )
             print(f"tools: {', '.join(sorted(names))}")
 
+            # The nested actions[] schema as the real mcp==1.30.0 client parsed it.
+            commit_schema = next(t for t in tools if t.name == "commit_files").inputSchema
+            actions_schema = commit_schema.get("properties", {}).get("actions", {})
+            check(
+                actions_schema.get("type") == "array",
+                f"commit_files: actions type is {actions_schema.get('type')!r}, want 'array'",
+            )
+            check(
+                actions_schema.get("items", {}).get("type") == "object",
+                f"commit_files: actions.items type is {actions_schema.get('items', {}).get('type')!r}, want 'object'",
+            )
+
             async def call(name: str, arguments: dict, expect_error: bool = False) -> str:
                 result = await session.call_tool(name, arguments)
                 text = result_text(result)
@@ -163,6 +176,19 @@ async def run(exe: str, base_url: str | None, token: str, project: str, file_pat
                     {"project": project, "branch": "smoke/branch", "ref": "main"},
                 )
                 check("smoke/branch" in created, f"create_branch result lacks the branch name: {created}")
+                committed = await call(
+                    "commit_files",
+                    {
+                        "project": project,
+                        "branch": "smoke/branch",
+                        "commit_message": "smoke commit",
+                        "actions": [
+                            {"action": "create", "file_path": "smoke/a.md", "content": "привет\n"},
+                            {"action": "delete", "file_path": "old.txt"},
+                        ],
+                    },
+                )
+                check("create smoke/a.md" in committed, f"commit_files result lacks the created file line: {committed}")
             missing = await call(
                 "get_project",
                 {"project": "no-such-group-xyz/no-such-project"},
