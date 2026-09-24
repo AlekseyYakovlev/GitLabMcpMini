@@ -169,9 +169,10 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 Plans:
 - [ ] TBD (promote with /bm:review-backlog when ready)
 
-### Phase 999.2: Тексты ошибок записи: «запись могла примениться» для Canceled/Decode/TooLarge/Other (BACKLOG)
+### Phase 999.2: Тексты ошибок записи: «запись могла примениться» для Canceled/Decode/TooLarge/Other (CLOSED in Phase 3, plan 03-03)
 
 **Goal:** Добавить эти виды сбоев в ветку `writeUnknownOutcome` в `errors.go` (`writeText`), чтобы модель не повторяла запись и не создавала дубль коммита. Источник: 02-REVIEW WR-01.
+**Closed:** writeText covers Canceled/Decode/TooLarge/Other with op-specific hints (Phase 3, D-15).
 **Requirements:** TBD
 **Plans:** 0 plans
 

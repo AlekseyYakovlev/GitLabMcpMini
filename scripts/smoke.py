@@ -17,6 +17,10 @@ Two modes:
               tools (create_branch, commit_files, create_or_update_file) and get_commit (needs a
               known SHA) are called only in hermetic mode.
 
+Write calls (create_branch, commit_files, create_or_update_file,
+create_merge_request) run only when --base-url points at a loopback host
+(127.0.0.1, localhost, ::1), so no run can write to gitlab.com.
+
 Usage:
     uv run scripts/smoke.py [--exe PATH] [--base-url URL] [--project P] [--file F]
 """
@@ -26,6 +30,7 @@ import asyncio
 import os
 import sys
 from pathlib import Path
+from urllib.parse import urlparse
 
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
@@ -50,9 +55,11 @@ EXPECTED_TOOLS = {
     "get_merge_request",
     "get_merge_request_diffs",
     "list_merge_request_notes",
+    "create_merge_request",
 }
 FAKE_SHA = "a1b2c3d4e5f6a7b8c9d0a1b2c3d4e5f6a7b8c9d0"
 FORBIDDEN_SCHEMA_KEYS = {"$ref", "$defs", "anyOf", "oneOf"}
+LOOPBACK_HOSTS = {"127.0.0.1", "localhost", "::1"}
 
 
 class SmokeFailure(Exception):
@@ -85,6 +92,15 @@ def walk_schema(node, path: str) -> None:
     elif isinstance(node, list):
         for i, value in enumerate(node):
             walk_schema(value, f"{path}[{i}]")
+
+
+def is_loopback(base_url: str) -> bool:
+    """True only for a base URL whose host is a loopback address."""
+    try:
+        host = urlparse(base_url).hostname
+    except ValueError:
+        return False
+    return host in LOOPBACK_HOSTS
 
 
 def result_text(result) -> str:
@@ -190,6 +206,10 @@ async def run(exe: str, base_url: str | None, token: str, project: str, file_pat
                 )
                 mr_notes = await call("list_merge_request_notes", {"project": project, "iid": 5})
                 check("[system]" in mr_notes, f"list_merge_request_notes result lacks a [system] note: {mr_notes}")
+
+            if base_url and not is_loopback(base_url):
+                print("skipping write calls: base URL is not loopback", file=sys.stderr)
+            if base_url and is_loopback(base_url):
                 created = await call(
                     "create_branch",
                     {"project": project, "branch": "smoke/branch", "ref": "main"},
@@ -222,6 +242,16 @@ async def run(exe: str, base_url: str | None, token: str, project: str, file_pat
                     upserted.startswith("updated"),
                     f"create_or_update_file result does not start with 'updated': {upserted}",
                 )
+                created_mr = await call(
+                    "create_merge_request",
+                    {
+                        "project": project,
+                        "source_branch": "smoke/branch",
+                        "title": "smoke MR",
+                        "target_branch": "main",
+                    },
+                )
+                check("MR !5 создан" in created_mr, f"create_merge_request result lacks the created MR: {created_mr}")
             missing = await call(
                 "get_project",
                 {"project": "no-such-group-xyz/no-such-project"},
