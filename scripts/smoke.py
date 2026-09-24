@@ -37,6 +37,16 @@ def check(condition: bool, reason: str) -> None:
         raise SmokeFailure(reason)
 
 
+def leaf_exceptions(exc: BaseException) -> list[BaseException]:
+    """Unwrap (nested) exception groups raised by the anyio task groups."""
+    if isinstance(exc, BaseExceptionGroup):
+        leaves: list[BaseException] = []
+        for sub in exc.exceptions:
+            leaves.extend(leaf_exceptions(sub))
+        return leaves
+    return [exc]
+
+
 def walk_schema(node, path: str) -> None:
     """Reject schema constructs the agent's LLM tooling handles poorly."""
     if isinstance(node, dict):
@@ -121,12 +131,12 @@ def main() -> int:
 
     try:
         asyncio.run(run(args.exe, args.base_url, token))
-    except SmokeFailure as exc:
-        print(f"SMOKE FAIL: {exc}", file=sys.stderr)
-        return 1
     except Exception as exc:  # noqa: BLE001 - report any client-side failure as a smoke failure
-        message = str(exc).replace(token, "[REDACTED]")
-        print(f"SMOKE FAIL: {type(exc).__name__}: {message}", file=sys.stderr)
+        for leaf in leaf_exceptions(exc):
+            message = f"{type(leaf).__name__}: {leaf}".replace(token, "[REDACTED]")
+            if isinstance(leaf, SmokeFailure):
+                message = str(leaf)
+            print(f"SMOKE FAIL: {message}", file=sys.stderr)
         return 1
 
     print("SMOKE OK")
