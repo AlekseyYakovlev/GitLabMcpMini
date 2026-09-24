@@ -24,9 +24,9 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **READ-02**: `get_project` — данные проекта, включая ветку по умолчанию
 - [x] **READ-03**: `list_repository_tree` — дерево файлов по пути и ref, с пагинацией
 - [x] **READ-04**: `get_file_contents` — текст файла по ref (декодирование base64, диапазон строк, защита от больших и бинарных файлов)
-- [ ] **READ-05**: `list_branches` — ветки проекта
-- [ ] **READ-06**: `list_commits` — коммиты по ref/пути
-- [ ] **READ-07**: `get_commit` — коммит вместе с diff
+- [x] **READ-05**: `list_branches` — ветки проекта
+- [x] **READ-06**: `list_commits` — коммиты по ref/пути
+- [x] **READ-07**: `get_commit` — коммит вместе с diff
 
 ### Merge Requests
 
@@ -41,14 +41,14 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Запись в репозиторий
 
-- [ ] **WRT-01**: `create_branch` — создание ветки от ref
-- [ ] **WRT-02**: `commit_files` — один коммит с несколькими файлами через Commits API (`actions[]`), без `force`
-- [ ] **WRT-03**: `create_or_update_file` — создание или обновление одного файла (обёртка над `commit_files`)
+- [x] **WRT-01**: `create_branch` — создание ветки от ref
+- [x] **WRT-02**: `commit_files` — один коммит с несколькими файлами через Commits API (`actions[]`), без `force`
+- [x] **WRT-03**: `create_or_update_file` — создание или обновление одного файла (обёртка над `commit_files`)
 
 ### Вспомогательные
 
 - [x] **UTIL-01**: `whoami` — текущий пользователь по токену (быстрая проверка токена и прав)
-- [ ] **UTIL-02**: `compare_refs` — сравнение двух веток/коммитов
+- [x] **UTIL-02**: `compare_refs` — сравнение двух веток/коммитов
 
 ### Качество и поставка
 
@@ -114,13 +114,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | READ-04 | Phase 1 | Complete |
 | QA-01 | Phase 1 | Complete |
 | QA-02 | Phase 1 | Complete |
-| READ-05 | Phase 2 | Pending |
-| READ-06 | Phase 2 | Pending |
-| READ-07 | Phase 2 | Pending |
-| UTIL-02 | Phase 2 | Pending |
-| WRT-01 | Phase 2 | Pending |
-| WRT-02 | Phase 2 | Pending |
-| WRT-03 | Phase 2 | Pending |
+| READ-05 | Phase 2 | Complete |
+| READ-06 | Phase 2 | Complete |
+| READ-07 | Phase 2 | Complete |
+| UTIL-02 | Phase 2 | Complete |
+| WRT-01 | Phase 2 | Complete |
+| WRT-02 | Phase 2 | Complete |
+| WRT-03 | Phase 2 | Complete |
 | MR-01 | Phase 3 | Pending |
 | MR-02 | Phase 3 | Pending |
 | MR-03 | Phase 3 | Pending |

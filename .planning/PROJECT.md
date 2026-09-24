@@ -17,14 +17,15 @@
 - ✓ Сервер работает по stdio-транспорту MCP и совместим с клиентом `mcp` 1.30.x (initialize, tools/list, tools/call) — Phase 1 (проверено гибридно: e2e на реальном бинарнике + Python-smoke; живой gitlab.com — Phase 4)
 - ✓ Авторизация через PAT из `GITLAB_TOKEN` (fail fast, токен не попадает в вывод и логи) — Phase 1
 - ✓ Понятные ошибки инструментов (401/403/404/429/5xx, сеть) без падения сервера — Phase 1
+- ✓ Чтение истории: ветки, коммиты по ref/пути, коммит с diff, сравнение двух ref (`list_branches`, `list_commits`, `get_commit`, `compare_refs`) — Phase 2 (герметично; живой gitlab.com — Phase 4)
+- ✓ Запись в репозиторий: создание ветки, один коммит с несколькими файлами (`commit_files`), правка одного файла (`create_or_update_file`) без повторов POST — Phase 2 (герметично; живой gitlab.com — Phase 4; 5 минорных замечаний ревью в бэклоге 999.1–999.5)
 
 ### Active
 
 <!-- Current scope. Building toward these. -->
 
-- [ ] Инструменты чтения кода: список/поиск проектов, дерево файлов, содержимое файла, ветки, коммиты, поиск по коду (Phase 1 закрыла проекты, дерево, файлы; ветки и коммиты — Phase 2)
+- [ ] Инструменты чтения кода: осталось поиск по коду, если не закрыт Phase 1 (проекты, дерево, файлы — Phase 1; ветки, коммиты — Phase 2)
 - [ ] Инструменты Merge Requests: просмотр списка и деталей, diff, создание MR, комментарии, merge
-- [ ] Инструменты записи в репозиторий: создание/изменение файлов, коммиты, создание веток
 - [ ] Автотесты плюс ручная проверка через stdio-клиент (скрипт или MCP Inspector) на реальном gitlab.com
 
 ### Out of Scope
@@ -83,4 +84,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-24 after Phase 1 (connect-and-read) completion*
+*Last updated: 2026-09-24 after Phase 2 (history-and-write) completion*
