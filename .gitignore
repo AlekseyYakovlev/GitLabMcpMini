@@ -1,0 +1,4 @@
+gitlab-mcp.exe
+*.exe
+.venv/
+__pycache__/
