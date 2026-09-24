@@ -172,9 +172,10 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 ## Backlog
 
-### Phase 999.1: commit_files: create/update без content не должен коммитить пустой файл (BACKLOG)
+### Phase 999.1: commit_files: create/update без content не должен коммитить пустой файл (CLOSED in Phase 4, plan 04-01)
 
 **Goal:** Сделать `ActionIn.Content` указателем (`*string`), отклонять create/update без `content` до запроса, разрешить явную пустую строку; тест «нет запроса без content». Источник: 02-REVIEW CR-01, 02-VERIFICATION. Рекомендуется закрыть до живого прогона Phase 4 (тихая деструктивная запись).
+**Closed:** реализовано без указателя (D-10): `content` остаётся `string`, пустой `content` при create/update в `commit_files` и в `create_or_update_file` отклоняется до запроса; пустой файл не создаётся (обход: один перевод строки); тесты «нет запроса без content».
 **Requirements:** TBD
 **Plans:** 0 plans
 
