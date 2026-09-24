@@ -46,6 +46,8 @@ EXPECTED_TOOLS = {
     "compare_refs",
     "commit_files",
     "create_or_update_file",
+    "list_merge_requests",
+    "get_merge_request",
 }
 FAKE_SHA = "a1b2c3d4e5f6a7b8c9d0a1b2c3d4e5f6a7b8c9d0"
 FORBIDDEN_SCHEMA_KEYS = {"$ref", "$defs", "anyOf", "oneOf"}
@@ -172,6 +174,13 @@ async def run(exe: str, base_url: str | None, token: str, project: str, file_pat
                     {"project": project, "from": "main", "to": "smoke/branch"},
                 )
                 check("→" in compared, f"compare_refs result lacks the from → to header: {compared}")
+                listed_mrs = await call("list_merge_requests", {"project": project})
+                check("!5" in listed_mrs, f"list_merge_requests result lacks !5: {listed_mrs}")
+                one_mr = await call("get_merge_request", {"project": project, "iid": 5})
+                check(
+                    "detailed_merge_status: mergeable" in one_mr,
+                    f"get_merge_request result lacks the merge status: {one_mr}",
+                )
                 created = await call(
                     "create_branch",
                     {"project": project, "branch": "smoke/branch", "ref": "main"},

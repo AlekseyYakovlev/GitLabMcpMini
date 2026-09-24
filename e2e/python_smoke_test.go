@@ -79,6 +79,12 @@ func TestPythonSmoke(t *testing.T) {
 			`"diffs":[{"diff":"@@ -1 +1 @@\n-old\n+new\n","new_path":"README.md","old_path":"README.md","a_mode":"100644","b_mode":"100644"}],`+
 			`"compare_timeout":true,"compare_same_ref":false}`, nil)
 
+	fake.JSON("GET", "/api/v4/projects/g%2Fp/merge_requests", 200,
+		`[{"iid":5,"state":"opened","draft":false,"title":"Add x","source_branch":"f","target_branch":"main","author":{"username":"alice"}}]`, nil)
+	fake.JSON("GET", "/api/v4/projects/g%2Fp/merge_requests/5", 200,
+		`{"iid":5,"title":"Add x","state":"opened","draft":false,"source_branch":"f","target_branch":"main","author":{"username":"alice"},`+
+			`"detailed_merge_status":"mergeable","changes_count":"1","web_url":"https://gitlab.example/g/p/-/merge_requests/5"}`, nil)
+
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
@@ -124,6 +130,12 @@ func TestPythonSmoke(t *testing.T) {
 	}
 	if !strings.Contains(stdout.String(), "updated README.md") {
 		t.Errorf("stdout does not contain the create_or_update_file result:\n%s", stdout.String())
+	}
+	if !strings.Contains(stdout.String(), "!5 opened Add x f→main @alice") {
+		t.Errorf("stdout does not contain the merge request list line:\n%s", stdout.String())
+	}
+	if !strings.Contains(stdout.String(), "detailed_merge_status: mergeable") {
+		t.Errorf("stdout does not contain the merge request status line:\n%s", stdout.String())
 	}
 	if strings.Contains(stdout.String(), testToken) || strings.Contains(stderr.String(), testToken) {
 		t.Errorf("smoke output leaks the token")
