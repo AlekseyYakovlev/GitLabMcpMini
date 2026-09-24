@@ -11,4 +11,16 @@ func Register(s *mcp.Server, d Deps) {
 		Description: whoamiDescription,
 		Annotations: &mcp.ToolAnnotations{ReadOnlyHint: true},
 	}, safe(d, whoami(d)))
+
+	mcp.AddTool(s, &mcp.Tool{
+		Name:        "list_projects",
+		Description: listProjectsDescription,
+		Annotations: &mcp.ToolAnnotations{ReadOnlyHint: true},
+	}, safe(d, listProjects(d)))
+
+	mcp.AddTool(s, &mcp.Tool{
+		Name:        "get_project",
+		Description: getProjectDescription,
+		Annotations: &mcp.ToolAnnotations{ReadOnlyHint: true},
+	}, safe(d, getProject(d)))
 }
