@@ -135,3 +135,50 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 2. История и запись в репозиторий | 5/5 | Complete   | 2026-09-24 |
 | 3. Merge Requests | 0/TBD | Not started | - |
 | 4. Живая проверка и поставка | 0/TBD | Not started | - |
+
+## Backlog
+
+### Phase 999.1: commit_files: create/update без content не должен коммитить пустой файл (BACKLOG)
+
+**Goal:** Сделать `ActionIn.Content` указателем (`*string`), отклонять create/update без `content` до запроса, разрешить явную пустую строку; тест «нет запроса без content». Источник: 02-REVIEW CR-01, 02-VERIFICATION. Рекомендуется закрыть до живого прогона Phase 4 (тихая деструктивная запись).
+**Requirements:** TBD
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (promote with /bm:review-backlog when ready)
+
+### Phase 999.2: Тексты ошибок записи: «запись могла примениться» для Canceled/Decode/TooLarge/Other (BACKLOG)
+
+**Goal:** Добавить эти виды сбоев в ветку `writeUnknownOutcome` в `errors.go` (`writeText`), чтобы модель не повторяла запись и не создавала дубль коммита. Источник: 02-REVIEW WR-01.
+**Requirements:** TBD
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (promote with /bm:review-backlog when ready)
+
+### Phase 999.3: create_or_update_file: описание завышает защиту от чужих правок (BACKLOG)
+
+**Goal:** Либо добавить входной `last_commit_id`, либо исправить описание инструмента: сервер сам перечитывает файл перед POST. Источник: 02-REVIEW WR-02 (и WR-05: перезапись бинарного файла текстом как обычное «updated»).
+**Requirements:** TBD
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (promote with /bm:review-backlog when ready)
+
+### Phase 999.4: compare_refs: переполнение при огромном page (BACKLOG)
+
+**Goal:** Ограничить `page` (и `page+1` в `PageFooter`), чтобы вместо recovered-паники в `safe` возвращалось понятное сообщение «страница вне диапазона». Источник: 02-REVIEW WR-03.
+**Requirements:** TBD
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (promote with /bm:review-backlog when ready)
+
+### Phase 999.5: smoke.py: записи только против loopback/фейка, не против gitlab.com (BACKLOG)
+
+**Goal:** Запускать `create_branch`, `commit_files` и перезапись README только при loopback-хосте или явном флаге. Иначе любой `--base-url`, включая gitlab.com, считается «hermetic». Обязательно до Phase 4. Источник: 02-REVIEW WR-04.
+**Requirements:** TBD
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (promote with /bm:review-backlog when ready)
