@@ -645,6 +645,45 @@
       "idempotentHint": false,
       "readOnlyHint": false
     },
+    "description": "Вливает Merge Request. Сначала читает MR и проверяет detailed_merge_status: если MR не открыт или слияние сейчас невозможно, вернёт объяснение и ничего не изменит (статус и причины показывает get_merge_request). Автослияние после завершения pipeline не поддерживается. squash, remove_source_branch и merge_commit_message передаются в GitLab только если заданы, иначе действуют настройки проекта; false не может выключить флаг, уже включённый на MR. Слияние необратимо и никогда не повторяется автоматически; если результат неизвестен, проверьте get_merge_request, прежде чем повторять. Запись требует токен со scope api и роль, которой разрешено вливать в целевую ветку.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "iid": {
+          "description": "merge request IID, the number after ! in GitLab",
+          "type": "integer"
+        },
+        "merge_commit_message": {
+          "description": "custom merge commit message; omit for the default",
+          "type": "string"
+        },
+        "project": {
+          "description": "numeric project ID as a string (\"12345\") or full path group/subgroup/project",
+          "type": "string"
+        },
+        "remove_source_branch": {
+          "description": "true asks GitLab to delete the source branch after the merge",
+          "type": "boolean"
+        },
+        "squash": {
+          "description": "true squashes the commits into one; omit to use the project setting",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "project",
+        "iid"
+      ],
+      "type": "object"
+    },
+    "name": "merge_merge_request"
+  },
+  {
+    "annotations": {
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "readOnlyHint": false
+    },
     "description": "Изменяет Merge Request: title, description, target_branch, state_event, draft. Меняются только непустые поля; пустое значение означает «не менять», поэтому описание нельзя очистить, а флаги нельзя сбросить пустым значением. state_event=close закрывает MR, reopen открывает закрытый заново. draft=true добавляет к заголовку префикс «Draft:»; чтобы снять Draft, передайте title без этого префикса (draft=false означает «не передано»). Запрос никогда не повторяется автоматически. Запись требует токен со scope api и роль Developer или выше.",
     "inputSchema": {
       "additionalProperties": false,
