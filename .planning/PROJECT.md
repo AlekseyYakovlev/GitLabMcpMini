@@ -23,11 +23,14 @@
 
 - ✓ Живой прогон на реальном gitlab.com (`scripts/live.py`, sandbox `AlekseyYakovlev/sanbox`): чтение → ветка → коммит → MR → комментарий → merge → очистка, плюс реальные ошибки (401/403/404, дубли, Draft, пустой content); один `gitlab-mcp.exe` (`CGO_ENABLED=0`) и README с конфигурацией для AiAdventAgentV2 — Phase 4 (LIVE-RUN.md; подключение к работающему агенту остаётся в 04-HUMAN-UAT.md; замечания ревью WR-01..WR-06 в 04-REVIEW.md)
 
+- ✓ Диагностика 403 при записи: точная причина (проект запланирован к удалению, в архиве, роль токена ниже Developer), `marked_for_deletion_on` и `your_access` в `get_project`, пометки в `list_projects` — quick 260926-24l (проверено на gitlab.com; инструментов по-прежнему 20)
+- ✓ Подключение к работающему агенту AiAdventAgentV2 подтверждено вручную (04-HUMAN-UAT.md) — v1.0
+
 ### Active
 
 <!-- Current scope. Building toward these. -->
 
-- [ ] Инструменты чтения кода: осталось поиск по коду, если не закрыт Phase 1 (проекты, дерево, файлы — Phase 1; ветки, коммиты — Phase 2)
+(Пусто: следующий milestone не определён. Кандидаты: поиск по коду, бэклог 999.3–999.5.)
 
 ### Out of Scope
 
@@ -45,7 +48,7 @@
 - Клиент — агент `C:\Projects\AiAdventAgentV2`: Python, MCP SDK `mcp` 1.30.x, только stdio-подпроцессы, поддерживаются нативные бинарники (например, Go `filesystem.exe`), Node/npx не используется. Ранее агент уже проверялся на локальном Go-сервере filesystem (17 tools).
 - Платформа разработки: Windows 11.
 - Целевой сервис: https://gitlab.com (REST API v4).
-- Язык реализации не выбран — решается на этапе исследования (кандидаты: Go как один .exe без зависимостей, либо Python с тем же SDK, что и в агенте).
+- Состояние на v1.0: Go, `modelcontextprotocol/go-sdk` v1.8.0 + `client-go/v2` v2.64.0, один `gitlab-mcp.exe` без зависимостей (`CGO_ENABLED=0`), 20 инструментов, ~11.5k строк Go и ~1.2k Python (smoke/live-клиенты на `mcp==1.30.0`). Агент подключён и использует сервер в работе.
 
 ## Constraints
 
@@ -60,12 +63,12 @@
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| stdio-транспорт | Единственный транспорт, который поддерживает агент | — Pending |
-| Авторизация через PAT | Один пользователь; OAuth избыточен | — Pending |
-| Запись без ограничений | Решение автора; безопасность через права токена | — Pending |
-| Подключение к агенту — вне проекта | Выполняется в AiAdventAgentV2 | — Pending |
-| Язык реализации (Go vs Python) | Решить в исследовании | — Pending |
-| «Готово» = автотесты + ручная проверка через stdio-клиент на реальном gitlab.com | Интеграция с агентом вне рамок проекта | — Pending |
+| stdio-транспорт | Единственный транспорт, который поддерживает агент | ✓ Good |
+| Авторизация через PAT | Один пользователь; OAuth избыточен | ✓ Good |
+| Запись без ограничений | Решение автора; безопасность через права токена | ✓ Good (403 теперь называет причину) |
+| Подключение к агенту — вне проекта | Выполняется в AiAdventAgentV2 | ✓ Good (проверено UAT) |
+| Язык реализации: Go + go-sdk + client-go/v2 | Один .exe без зависимостей; спайк против `mcp` 1.30.0 прошёл | ✓ Good |
+| «Готово» = автотесты + ручная проверка через stdio-клиент на реальном gitlab.com | Интеграция с агентом вне рамок проекта | ✓ Good (LIVE-RUN.md) |
 
 ## Evolution
 
@@ -85,4 +88,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-25 after Phase 4 (live-verification-and-delivery) completion*
+*Last updated: 2026-09-26 after v1.0 milestone*
