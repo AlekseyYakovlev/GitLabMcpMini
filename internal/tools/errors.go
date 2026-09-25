@@ -58,6 +58,26 @@ func withWrite(op, subject string, err error) error {
 	return &subjectError{subject: subject, err: err, write: true, op: op}
 }
 
+// deadlineAsServerError reports the real status when a read ran into the call
+// deadline while GitLab kept answering 5xx (status, from glclient.ServerStatus),
+// so the caller sees "500: ошибка сервера GitLab" and not a bare timeout. Other
+// errors, and every write failure, pass through unchanged: the write wording
+// says the outcome is unknown, which a status remembered from an earlier read
+// must not override.
+func deadlineAsServerError(err error, status int) error {
+	if status < 500 {
+		return err
+	}
+	var se *subjectError
+	if errors.As(err, &se) && se.write {
+		return err
+	}
+	if e := glclient.Classify(err); e == nil || e.Kind != glclient.KindTimeout {
+		return err
+	}
+	return &glclient.Error{Kind: glclient.KindServer, Status: status}
+}
+
 // toToolText turns any handler error into the short Russian message shown to
 // the model. Raw response bodies are never echoed.
 func toToolText(err error) string {

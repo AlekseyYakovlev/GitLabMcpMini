@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 )
 
@@ -20,10 +21,49 @@ const (
 	serverBackoff = 500 * time.Millisecond
 )
 
+// ServerStatus remembers the status of the last read response of one tool
+// call, so that a call which runs into its deadline while GitLab keeps
+// answering 5xx can still report that status instead of a bare timeout.
+type ServerStatus struct {
+	status atomic.Int32
+}
+
+type serverStatusKey struct{}
+
+// WithServerStatus returns a context whose read requests report their 5xx
+// responses to the returned ServerStatus.
+func WithServerStatus(ctx context.Context) (context.Context, *ServerStatus) {
+	s := &ServerStatus{}
+	return context.WithValue(ctx, serverStatusKey{}, s), s
+}
+
+// Status is the HTTP status of the last read response when it was a 5xx, or 0
+// when there was none or a later read answered without a server error.
+func (s *ServerStatus) Status() int { return int(s.status.Load()) }
+
+// noteReadStatus records the status of a GET/HEAD response for ServerStatus.
+func noteReadStatus(ctx context.Context, resp *http.Response) {
+	s, ok := ctx.Value(serverStatusKey{}).(*ServerStatus)
+	if !ok || resp == nil || resp.Request == nil {
+		return
+	}
+	if m := resp.Request.Method; m != http.MethodGet && m != http.MethodHead {
+		return
+	}
+	if resp.StatusCode >= 500 {
+		s.status.Store(int32(resp.StatusCode))
+	} else {
+		s.status.Store(0)
+	}
+}
+
 // checkRetry is the retry policy of the shared client: only reads (GET/HEAD)
 // are ever retried, so a failed write can never produce a duplicate commit,
 // comment or merge request.
 func checkRetry(ctx context.Context, resp *http.Response, err error) (bool, error) {
+	if err == nil {
+		noteReadStatus(ctx, resp)
+	}
 	if ctx.Err() != nil {
 		return false, ctx.Err()
 	}

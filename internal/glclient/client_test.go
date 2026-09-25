@@ -215,3 +215,55 @@ func TestRefusedConnectionWriteNotRetried(t *testing.T) {
 		t.Errorf("POST to a refused connection took %v, want no retry waiting", elapsed)
 	}
 }
+
+func TestServerStatusTracksReadsOnly(t *testing.T) {
+	tests := []struct {
+		name   string
+		method string
+		routes func(f *testutil.FakeGitLab)
+		want   int
+	}{
+		{name: "GET 500 is remembered", method: "GET", want: 500,
+			routes: func(f *testutil.FakeGitLab) { f.JSON("GET", "/api/v4/test", 500, `<html>oops</html>`, nil) }},
+		{name: "GET 200 leaves nothing", method: "GET", want: 0,
+			routes: func(f *testutil.FakeGitLab) { f.JSON("GET", "/api/v4/test", 200, `{}`, nil) }},
+		{name: "POST 500 is never recorded", method: "POST", want: 0,
+			routes: func(f *testutil.FakeGitLab) { f.JSON("POST", "/api/v4/test", 500, `{}`, nil) }},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			f := testutil.NewFakeGitLab(t)
+			tt.routes(f)
+			c := testClient(t, f.URL, limits{maxBody: defaultMaxBody})
+
+			ctx, status := WithServerStatus(context.Background())
+			_ = do(t, c, tt.method, gitlab.WithContext(ctx))
+			if got := status.Status(); got != tt.want {
+				t.Errorf("Status() = %d, want %d", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestServerStatusResetByLaterSuccess(t *testing.T) {
+	f := testutil.NewFakeGitLab(t)
+	calls := 0
+	f.Handle("GET", "/api/v4/test", func(w http.ResponseWriter, _ *http.Request) {
+		calls++
+		if calls == 1 {
+			w.WriteHeader(http.StatusBadGateway)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{}`))
+	})
+	c := testClient(t, f.URL, limits{maxBody: defaultMaxBody})
+
+	ctx, status := WithServerStatus(context.Background())
+	if err := do(t, c, "GET", gitlab.WithContext(ctx)); err != nil {
+		t.Fatalf("GET after one 502 should succeed on retry: %v", err)
+	}
+	if got := status.Status(); got != 0 {
+		t.Errorf("Status() = %d after a successful retry, want 0", got)
+	}
+}

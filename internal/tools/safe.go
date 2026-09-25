@@ -9,6 +9,8 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	gitlab "gitlab.com/gitlab-org/api/client-go/v2"
+
+	"gitlab-mcp/internal/glclient"
 )
 
 // CallTimeout is the deadline applied to every tool call.
@@ -48,9 +50,11 @@ func safe[T any](d Deps, h func(ctx context.Context, in T) (string, error)) mcp.
 		}
 		ctx, cancel := context.WithTimeout(ctx, timeout)
 		defer cancel()
+		ctx, serverStatus := glclient.WithServerStatus(ctx)
 
 		text, err := h(ctx, in)
 		if err != nil {
+			err = deadlineAsServerError(err, serverStatus.Status())
 			msg := d.redact(errorText(err))
 			if d.Logger != nil {
 				d.Logger.Warn("tool call failed", "error", msg)
