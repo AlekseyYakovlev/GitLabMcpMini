@@ -45,7 +45,6 @@ func listProjects(d Deps) func(ctx context.Context, in ListProjectsIn) (string, 
 		opts := &gitlab.ListProjectsOptions{
 			ListOptions: gitlab.ListOptions{Page: int64(page), PerPage: int64(perPage)},
 			Simple:      gitlab.Ptr(true),
-			OrderBy:     gitlab.Ptr("last_activity_at"),
 		}
 		if !in.IncludePublic {
 			opts.Membership = gitlab.Ptr(true)

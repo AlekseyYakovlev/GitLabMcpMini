@@ -43,10 +43,17 @@ func TestListProjectsDefaultsAndNextPage(t *testing.T) {
 		t.Fatalf("parse query %q: %v", q, err)
 	}
 	for k, want := range map[string]string{
-		"membership": "true", "simple": "true", "page": "1", "per_page": "20", "order_by": "last_activity_at",
+		"membership": "true", "simple": "true", "page": "1", "per_page": "20",
 	} {
 		if vals.Get(k) != want {
 			t.Errorf("query %s = %q, want %q (full query %q)", k, vals.Get(k), want, q)
+		}
+	}
+	// gitlab.com answers 500 for order_by=last_activity_at/updated_at on some
+	// tokens, so no sort is requested and GitLab's default order applies.
+	for _, k := range []string{"order_by", "sort"} {
+		if vals.Has(k) {
+			t.Errorf("query has %s=%q, want no sort parameters (full query %q)", k, vals.Get(k), q)
 		}
 	}
 
