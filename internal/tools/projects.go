@@ -12,11 +12,13 @@ import (
 
 const (
 	listProjectsDescription = "Список проектов GitLab, доступных по токену (по умолчанию только те, где вы участник). " +
-		"Одна строка на проект: id, путь, ветка по умолчанию, описание. " +
+		"Одна строка на проект: id, путь, ветка по умолчанию, пометки [scheduled for deletion] и [archived] " +
+		"(в такие проекты писать нельзя), описание. " +
 		"Для следующей страницы вызовите снова с page из подсказки внизу."
 
 	getProjectDescription = "Ключевые поля одного проекта GitLab: id, путь, ветка по умолчанию, видимость, " +
-		"архивный ли, дата последней активности, ссылка и описание. " +
+		"архивный ли, дата запланированного удаления (если есть), ваша роль в проекте (your_access), " +
+		"дата последней активности, ссылка и описание. " +
 		"Проект задаётся числовым ID или путём group/subgroup/project."
 
 	listProjectLineDescriptionRunes = 120
@@ -44,7 +46,6 @@ func listProjects(d Deps) func(ctx context.Context, in ListProjectsIn) (string, 
 
 		opts := &gitlab.ListProjectsOptions{
 			ListOptions: gitlab.ListOptions{Page: int64(page), PerPage: int64(perPage)},
-			Simple:      gitlab.Ptr(true),
 		}
 		if !in.IncludePublic {
 			opts.Membership = gitlab.Ptr(true)
@@ -69,13 +70,21 @@ func listProjects(d Deps) func(ctx context.Context, in ListProjectsIn) (string, 
 	}
 }
 
-// projectLine renders "<id> <path> (<default_branch>) — <description>", with
-// the branch and description parts omitted when empty.
+// projectLine renders "<id> <path> (<default_branch>) [markers] — <description>",
+// with the branch, markers and description parts omitted when empty. Markers
+// are [scheduled for deletion] and [archived]; both mean the project is
+// read-only.
 func projectLine(p *gitlab.Project) string {
 	var sb strings.Builder
 	fmt.Fprintf(&sb, "%d %s", p.ID, p.PathWithNamespace)
 	if p.DefaultBranch != "" {
 		fmt.Fprintf(&sb, " (%s)", p.DefaultBranch)
+	}
+	if p.MarkedForDeletionOn != nil {
+		sb.WriteString(" [scheduled for deletion]")
+	}
+	if p.Archived {
+		sb.WriteString(" [archived]")
 	}
 	if desc := oneLine(p.Description, listProjectLineDescriptionRunes); desc != "" {
 		fmt.Fprintf(&sb, " — %s", desc)
@@ -110,6 +119,10 @@ func getProject(d Deps) func(ctx context.Context, in ProjectIn) (string, error) 
 		fmt.Fprintf(&sb, "default_branch: %s\n", branch)
 		fmt.Fprintf(&sb, "visibility: %s\n", p.Visibility)
 		fmt.Fprintf(&sb, "archived: %s\n", archived)
+		if p.MarkedForDeletionOn != nil {
+			fmt.Fprintf(&sb, "marked_for_deletion_on: %s\n", isoDate(p.MarkedForDeletionOn))
+		}
+		fmt.Fprintf(&sb, "your_access: %s\n", yourAccess(p))
 		if p.LastActivityAt != nil {
 			fmt.Fprintf(&sb, "last_activity: %s\n", p.LastActivityAt.Format("2006-01-02"))
 		}

@@ -24,6 +24,10 @@ type subjectError struct {
 	// write operation so wording rules can key on it instead of the subject.
 	write bool
 	op    string
+	// project is the project a write targeted; safe uses it to look up why a
+	// 403 happened. reason is that looked-up cause (see explainForbidden).
+	project string
+	reason  string
 }
 
 func (e *subjectError) Error() string { return e.err.Error() }
@@ -56,6 +60,19 @@ func withWrite(op, subject string, err error) error {
 		return nil
 	}
 	return &subjectError{subject: subject, err: err, write: true, op: op}
+}
+
+// withProject records the project a write failure belongs to, so a 403 can be
+// explained by asking GitLab about that project. Errors that are not write
+// failures pass through unchanged.
+func withProject(project string, err error) error {
+	var se *subjectError
+	if err == nil || !errors.As(err, &se) || !se.write {
+		return err
+	}
+	cp := *se
+	cp.project = project
+	return &cp
 }
 
 // deadlineAsServerError reports the real status when a read ran into the call
@@ -94,6 +111,9 @@ func toToolText(err error) string {
 	}
 
 	if hasSubject && se.write {
+		if se.reason != "" && e.Kind == glclient.KindForbidden {
+			return statusPrefix(e) + se.reason
+		}
 		if text, ok := writeText(e, se.op, subject); ok {
 			return text
 		}

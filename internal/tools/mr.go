@@ -366,7 +366,7 @@ func createMergeRequest(d Deps) func(ctx context.Context, in CreateMRIn) (string
 func createMRError(ctx context.Context, d Deps, project, source string, err error) error {
 	e := glclient.Classify(err)
 	if e == nil || e.Status != 409 || !strings.Contains(strings.ToLower(e.Detail), "another open merge request already exists") {
-		return withWrite(opCreateMR, "проект или ветка", err)
+		return withProject(project, withWrite(opCreateMR, "проект или ветка", err))
 	}
 
 	ref := "открытый MR из этой ветки уже есть (номер не удалось определить; см. list_merge_requests)"
@@ -461,7 +461,7 @@ func updateMergeRequest(d Deps) func(ctx context.Context, in UpdateMRIn) (string
 
 		mr, _, err := d.GL.MergeRequests.UpdateMergeRequest(project, int64(in.IID), opts, gitlab.WithContext(ctx))
 		if err != nil {
-			return "", withWrite(opUpdateMR, mrSubject, err)
+			return "", withProject(project, withWrite(opUpdateMR, mrSubject, err))
 		}
 
 		draft := "нет"

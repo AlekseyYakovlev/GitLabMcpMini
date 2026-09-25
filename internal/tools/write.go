@@ -198,7 +198,7 @@ func commitCore(ctx context.Context, d Deps, project, branch, message string, ac
 
 	commit, _, err := d.GL.Commits.CreateCommit(project, opts, gitlab.WithContext(ctx))
 	if err != nil {
-		return nil, withWrite(opCommit, "проект или ветка", err)
+		return nil, withProject(project, withWrite(opCommit, "проект или ветка", err))
 	}
 	return commit, nil
 }

@@ -55,6 +55,7 @@ func safe[T any](d Deps, h func(ctx context.Context, in T) (string, error)) mcp.
 		text, err := h(ctx, in)
 		if err != nil {
 			err = deadlineAsServerError(err, serverStatus.Status())
+			err = d.explainForbidden(ctx, err)
 			msg := d.redact(errorText(err))
 			if d.Logger != nil {
 				d.Logger.Warn("tool call failed", "error", msg)

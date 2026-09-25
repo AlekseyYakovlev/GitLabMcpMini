@@ -132,7 +132,7 @@ func createBranch(d Deps) func(ctx context.Context, in CreateBranchIn) (string, 
 			Ref:    gitlab.Ptr(ref),
 		}, gitlab.WithContext(ctx))
 		if err != nil {
-			return "", withWrite(opCreateBranch, "проект или ветка", err)
+			return "", withProject(project, withWrite(opCreateBranch, "проект или ветка", err))
 		}
 
 		tip := "-"

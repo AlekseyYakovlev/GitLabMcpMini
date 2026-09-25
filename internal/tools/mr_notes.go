@@ -136,7 +136,7 @@ func createMergeRequestNote(d Deps) func(ctx context.Context, in CreateMRNoteIn)
 			Body: gitlab.Ptr(in.Body),
 		}, gitlab.WithContext(ctx))
 		if err != nil {
-			return "", withWrite(opMRNote, mrSubject, err)
+			return "", withProject(project, withWrite(opMRNote, mrSubject, err))
 		}
 
 		// A body made only of quick actions creates no note, so GitLab returns no id.

@@ -69,7 +69,7 @@ func mergeMergeRequest(d Deps) func(ctx context.Context, in MergeMRIn) (string, 
 
 		merged, _, err := d.GL.MergeRequests.AcceptMergeRequest(project, int64(in.IID), opts, gitlab.WithContext(ctx))
 		if err != nil {
-			return "", withWrite(opMergeMR, mrSubject, err)
+			return "", withProject(project, withWrite(opMergeMR, mrSubject, err))
 		}
 		if merged.IID == 0 {
 			merged.IID = int64(in.IID)
