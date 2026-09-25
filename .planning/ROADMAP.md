@@ -18,7 +18,7 @@
  (completed 2026-09-24)
 - [x] **Phase 3: Merge Requests** - Агент просматривает MR (детали, diff, комментарии), создаёт, комментирует, правит и вливает MR
  (completed 2026-09-24)
-- [ ] **Phase 4: Живая проверка и поставка** - Полный сценарий на реальном gitlab.com пройден; один `gitlab-mcp.exe` и README готовы к подключению агента
+- [x] **Phase 4: Живая проверка и поставка** - Полный сценарий на реальном gitlab.com пройден; один `gitlab-mcp.exe` и README готовы к подключению агента (completed 2026-09-25)
 
 ## Phase Details
 
@@ -156,7 +156,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 04-04-PLAN.md — Rebuild exe, author tokens (human action), live run on AlekseyYakovlev/sanbox, D-04 fix loop, commit LIVE-RUN.md
+- [x] 04-04-PLAN.md — Rebuild exe, author tokens (human action), live run on AlekseyYakovlev/sanbox, D-04 fix loop, commit LIVE-RUN.md
 
 ## Progress
 
@@ -168,7 +168,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 1. Подключение и чтение проекта | 6/6 | Complete   | 2026-09-24 |
 | 2. История и запись в репозиторий | 5/5 | Complete   | 2026-09-24 |
 | 3. Merge Requests | 5/5 | Complete   | 2026-09-24 |
-| 4. Живая проверка и поставка | 3/4 | In Progress|  |
+| 4. Живая проверка и поставка | 4/4 | Complete   | 2026-09-25 |
 
 ## Backlog
 

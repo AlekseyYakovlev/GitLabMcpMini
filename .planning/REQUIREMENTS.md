@@ -54,8 +54,8 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [x] **QA-01**: Автотесты: `httptest` с фейковым GitLab, in-memory MCP-сессия, e2e по stdio на реальном бинарнике, включая проверку чистоты stdout
 - [x] **QA-02**: Smoke-скрипт на Python `mcp` 1.30.0 (`stdio_client` с `env`), повторяющий подключение агента
-- [ ] **QA-03**: Живой прогон на тестовом проекте gitlab.com: чтение, ветка, коммит, MR, комментарий, merge, очистка
-- [ ] **QA-04**: Сборка в один `gitlab-mcp.exe` (Go) и README с фрагментом конфигурации для агента и требуемыми scope токена (`api` для записи)
+- [x] **QA-03**: Живой прогон на тестовом проекте gitlab.com: чтение, ветка, коммит, MR, комментарий, merge, очистка
+- [x] **QA-04**: Сборка в один `gitlab-mcp.exe` (Go) и README с фрагментом конфигурации для агента и требуемыми scope токена (`api` для записи)
 
 ## v2 Requirements
 
@@ -129,8 +129,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | MR-06 | Phase 3 | Complete |
 | MR-07 | Phase 3 | Complete |
 | MR-08 | Phase 3 | Complete |
-| QA-03 | Phase 4 | Pending |
-| QA-04 | Phase 4 | Pending |
+| QA-03 | Phase 4 | Complete |
+| QA-04 | Phase 4 | Complete |
 
 **Coverage:**
 - v1 requirements: 32 total
