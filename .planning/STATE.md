@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-09-24)
 Phase: 04
 Plan: Not started
 Status: Milestone complete
-Last activity: 2026-09-25
+Last activity: 2026-09-25 - Completed quick task 260925-pk3: list_projects без order_by, реальный 5xx при дедлайне
 
 Progress: [██████████] 100%
 
@@ -86,6 +86,12 @@ None yet.
 - Схема вложенных `actions[]` для `commit_files` нужно проверить на совместимость с клиентом 1.30.x (Phase 2)
 - Нужны от автора: тестовый проект на gitlab.com и PAT со scope `api` для живой проверки (Phase 4)
 - Решить: префикс имён инструментов (рекомендация: без префикса) и поведение при отсутствии токена (рекомендация: fail fast) в Phase 1
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260925-pk3 | list_projects: убрать order_by, показывать реальный 5xx при дедлайне | 2026-09-25 | 9c1a041 | [260925-pk3-fix-list-projects-order-by-500-and-surfa](./quick/260925-pk3-fix-list-projects-order-by-500-and-surfa/) |
 
 ## Session Continuity
 
