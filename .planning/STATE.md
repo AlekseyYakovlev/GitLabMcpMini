@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-09-24)
 Phase: 04
 Plan: Not started
 Status: Milestone complete
-Last activity: 2026-09-25 - Completed quick task 260925-pk3: list_projects без order_by, реальный 5xx при дедлайне
+Last activity: 2026-09-26 - Completed quick task 260926-24l: диагностика 403 при записи, статус удаления и роль токена
 
 Progress: [██████████] 100%
 
@@ -92,6 +92,7 @@ None yet.
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 260925-pk3 | list_projects: убрать order_by, показывать реальный 5xx при дедлайне | 2026-09-25 | 9c1a041 | [260925-pk3-fix-list-projects-order-by-500-and-surfa](./quick/260925-pk3-fix-list-projects-order-by-500-and-surfa/) |
+| 260926-24l | Диагностика 403 при записи; статус удаления и роль токена в get_project/list_projects | 2026-09-26 | 2b007e6 | [260926-24l-improve-403-diagnostics-on-write-show-de](./quick/260926-24l-improve-403-diagnostics-on-write-show-de/) |
 
 ## Session Continuity
 
