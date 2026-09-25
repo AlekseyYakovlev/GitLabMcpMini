@@ -21,12 +21,13 @@
 - ✓ Запись в репозиторий: создание ветки, один коммит с несколькими файлами (`commit_files`), правка одного файла (`create_or_update_file`) без повторов POST — Phase 2 (герметично; живой gitlab.com — Phase 4; 5 минорных замечаний ревью в бэклоге 999.1–999.5)
 - ✓ Инструменты Merge Requests: список и детали с пояснением `detailed_merge_status`, diff постранично, комментарии, создание, комментирование, правка и безопасное влитие MR (`list_merge_requests`, `get_merge_request`, `get_merge_request_diffs`, `list_merge_request_notes`, `create_merge_request`, `create_merge_request_note`, `update_merge_request`, `merge_merge_request`; всего 20 tools) — Phase 3 (герметично; живой gitlab.com — Phase 4; замечания ревью WR-01..WR-03 в 03-REVIEW.md)
 
+- ✓ Живой прогон на реальном gitlab.com (`scripts/live.py`, sandbox `AlekseyYakovlev/sanbox`): чтение → ветка → коммит → MR → комментарий → merge → очистка, плюс реальные ошибки (401/403/404, дубли, Draft, пустой content); один `gitlab-mcp.exe` (`CGO_ENABLED=0`) и README с конфигурацией для AiAdventAgentV2 — Phase 4 (LIVE-RUN.md; подключение к работающему агенту остаётся в 04-HUMAN-UAT.md; замечания ревью WR-01..WR-06 в 04-REVIEW.md)
+
 ### Active
 
 <!-- Current scope. Building toward these. -->
 
 - [ ] Инструменты чтения кода: осталось поиск по коду, если не закрыт Phase 1 (проекты, дерево, файлы — Phase 1; ветки, коммиты — Phase 2)
-- [ ] Автотесты плюс ручная проверка через stdio-клиент (скрипт или MCP Inspector) на реальном gitlab.com
 
 ### Out of Scope
 
@@ -84,4 +85,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-24 after Phase 3 (merge-requests) completion*
+*Last updated: 2026-09-25 after Phase 4 (live-verification-and-delivery) completion*
